@@ -1,0 +1,171 @@
+{
+  "$schema": "./product-manifest.schema.json",
+
+  "product": {
+    "name": "Test Product Licensed",
+    "slug": "test-product-licensed",
+    "shortDescription": "Тестовый продукт с Perpetual лицензией и Maintenance",
+    "fullDescription": "Плагин для тестирования perpetual-модели лицензирования. Pro и ProPlus планы с разовой покупкой, Maintenance-подписка для обновлений. Демонстрирует Version Lock при истечении Maintenance.",
+    "licensingMode": "GrossGeo",
+    "externalPurchaseUrl": null,
+    "externalDownloadUrl": null,
+    "externalLicenseInstructions": null,
+    "trialDays": 0,
+    "tags": ["perpetual", "maintenance", "testing"]
+  },
+
+  "plans": [
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "tier": "Pro",
+      "billingModel": "Perpetual",
+      "billingPeriod": "OneTime",
+      "licenseMode": "Machine",
+      "monthlyPrice": null,
+      "yearlyPrice": null,
+      "oneTimePrice": 9990,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "isActive": true
+    },
+    {
+      "code": "pro-plus",
+      "name": "Pro Plus",
+      "displayName": "Pro+",
+      "tier": "ProPlus",
+      "billingModel": "Perpetual",
+      "billingPeriod": "OneTime",
+      "licenseMode": "Machine",
+      "monthlyPrice": null,
+      "yearlyPrice": null,
+      "oneTimePrice": 24990,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "isActive": true
+    },
+    {
+      "code": "maintenance",
+      "name": "Maintenance",
+      "displayName": "Обслуживание",
+      "tier": "Maintenance",
+      "billingModel": "Subscription",
+      "billingPeriod": "Yearly",
+      "licenseMode": "Machine",
+      "monthlyPrice": null,
+      "yearlyPrice": 2990,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "requiresPlanCode": "pro",
+      "isActive": true
+    }
+  ],
+
+  "features": [
+    {
+      "code": "core",
+      "name": "Ядро",
+      "description": "Основной функционал продукта",
+      "isDefault": true,
+      "isPublic": false
+    },
+    {
+      "code": "advanced",
+      "name": "Расширенный функционал",
+      "description": "Продвинутые инструменты анализа",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "premium",
+      "name": "Премиум функционал",
+      "description": "Эксклюзивные инструменты для Pro+ пользователей",
+      "isDefault": false,
+      "isPublic": false
+    }
+  ],
+
+  "planFeatures": {
+    "pro": ["core", "advanced"],
+    "pro-plus": ["core", "advanced", "premium"],
+    "maintenance": ["core", "advanced"]
+  },
+
+  "featureLimits": {},
+
+  "releases": [
+    {
+      "version": "1.0.0",
+      "channel": "Stable",
+      "changelog": "Первый релиз. Pro и ProPlus Perpetual планы.",
+      "distributionType": "Bundle",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "Contents/TestProduct.Licensed.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD", "Civil3D"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": true,
+      "fixtureFile": "fixtures/TestProduct.Licensed.v1.0.0.bundle.zip"
+    },
+    {
+      "version": "1.1.0",
+      "channel": "Stable",
+      "changelog": "Багфикс, улучшения стабильности. Доступно только с активной Maintenance подпиской.",
+      "distributionType": "Bundle",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "Contents/TestProduct.Licensed.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD", "Civil3D"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": true,
+      "fixtureFile": "fixtures/TestProduct.Licensed.v1.1.0.bundle.zip"
+    }
+  ],
+
+  "expectations": {
+    "sdkInit": {
+      "isValid": true,
+      "expectedPlanTier": "Pro",
+      "expectedBillingModel": "Perpetual"
+    },
+    "maintenanceLifecycle": {
+      "withActiveMaintenance": {
+        "canUpdate": true,
+        "latestVersion": "1.1.0"
+      },
+      "withExpiredMaintenance": {
+        "canUpdate": false,
+        "versionLockedAt": "1.0.0"
+      },
+      "withoutMaintenance": {
+        "canUpdate": false,
+        "noUpdateAvailable": true
+      }
+    },
+    "commands": [
+      {
+        "name": "GGLICTEST",
+        "expectedOutput": "Licensed plugin executed",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGLICINFO",
+        "expectedOutput": "PlanTier=Pro",
+        "requiresLicense": false
+      }
+    ]
+  }
+}

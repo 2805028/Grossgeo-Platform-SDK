@@ -1,0 +1,241 @@
+{
+  "$schema": "./product-manifest.schema.json",
+
+  "product": {
+    "name": "Test Product Concurrent",
+    "slug": "test-product-concurrent",
+    "shortDescription": "Тестовый Multi-tier продукт с Concurrent лицензированием",
+    "fullDescription": "Плагин для тестирования multi-tier модели с concurrent сессиями. Free/Pro/Pro+ планы, Graduated Feature Limits, MaxPerSession, Heartbeat, Session Timeout, Force Release.",
+    "licensingMode": "GrossGeo",
+    "externalPurchaseUrl": null,
+    "externalDownloadUrl": null,
+    "externalLicenseInstructions": null,
+    "trialDays": 7,
+    "tags": ["concurrent", "multi-tier", "testing"]
+  },
+
+  "plans": [
+    {
+      "code": "free",
+      "name": "Free",
+      "displayName": "Бесплатный",
+      "tier": "Free",
+      "billingModel": "Free",
+      "billingPeriod": null,
+      "licenseMode": "Machine",
+      "monthlyPrice": 0,
+      "yearlyPrice": 0,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "isActive": true
+    },
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "tier": "Pro",
+      "billingModel": "Subscription",
+      "billingPeriod": "Monthly",
+      "licenseMode": "User",
+      "monthlyPrice": 800,
+      "yearlyPrice": null,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 7,
+      "trialBindingMode": "Account",
+      "isActive": true
+    },
+    {
+      "code": "pro-plus",
+      "name": "Pro Plus",
+      "displayName": "Pro+ (Concurrent)",
+      "tier": "ProPlus",
+      "billingModel": "Subscription",
+      "billingPeriod": "Monthly",
+      "licenseMode": "Concurrent",
+      "monthlyPrice": 1500,
+      "yearlyPrice": null,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 10,
+      "maxConcurrentSessions": 10,
+      "trialDays": 7,
+      "trialBindingMode": "Account",
+      "isActive": true
+    }
+  ],
+
+  "features": [
+    {
+      "code": "view-objects",
+      "name": "Просмотр объектов",
+      "description": "Базовый просмотр объектов на чертеже",
+      "isDefault": true,
+      "isPublic": true
+    },
+    {
+      "code": "basic-tools",
+      "name": "Базовые инструменты",
+      "description": "Набор базовых инструментов",
+      "isDefault": true,
+      "isPublic": false
+    },
+    {
+      "code": "pro-tools",
+      "name": "Профессиональные инструменты",
+      "description": "Расширенные инструменты для Pro/Pro+ пользователей",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "export-batch",
+      "name": "Пакетный экспорт",
+      "description": "Экспорт с graduated limits по планам",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "enterprise-api",
+      "name": "Enterprise API",
+      "description": "Программный доступ к API для автоматизации",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "cloud-sync",
+      "name": "Облачная синхронизация",
+      "description": "Синхронизация данных с облачным хранилищем",
+      "isDefault": false,
+      "isPublic": false
+    }
+  ],
+
+  "planFeatures": {
+    "free": ["view-objects", "basic-tools", "export-batch"],
+    "pro": ["view-objects", "basic-tools", "pro-tools", "export-batch"],
+    "pro-plus": ["view-objects", "basic-tools", "pro-tools", "export-batch", "enterprise-api", "cloud-sync"]
+  },
+
+  "featureLimits": {
+    "free.export-batch": [
+      {
+        "limitCode": "maxObjects",
+        "limitType": "MaxPerCall",
+        "limitValue": 10
+      }
+    ],
+    "pro.export-batch": [
+      {
+        "limitCode": "maxObjects",
+        "limitType": "MaxPerCall",
+        "limitValue": 100
+      }
+    ],
+    "pro-plus.export-batch": null,
+
+    "pro.pro-tools": [
+      {
+        "limitCode": "maxPerSession",
+        "limitType": "MaxPerSession",
+        "limitValue": 50
+      }
+    ],
+    "pro-plus.pro-tools": null
+  },
+
+  "releases": [
+    {
+      "version": "1.0.0",
+      "channel": "Stable",
+      "changelog": "Первый релиз. Free/Pro/Pro+ планы, Concurrent сессии.",
+      "distributionType": "Bundle",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "Contents/TestProduct.Concurrent.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD", "Civil3D"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": true,
+      "fixtureFile": "fixtures/TestProduct.Concurrent.v1.0.0.bundle.zip"
+    },
+    {
+      "version": "1.1.0",
+      "channel": "Stable",
+      "changelog": "Graduated limits, session timeout тест, MaxPerSession.",
+      "distributionType": "Bundle",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "Contents/TestProduct.Concurrent.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD", "Civil3D"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": true,
+      "fixtureFile": "fixtures/TestProduct.Concurrent.v1.1.0.bundle.zip"
+    }
+  ],
+
+  "expectations": {
+    "sdkInit": {
+      "isValid": true,
+      "expectedPlanTier": "Free",
+      "expectedBillingModel": "Free"
+    },
+    "trial": {
+      "proTrial": {
+        "isAvailable": true,
+        "trialDays": 7,
+        "trialBindingMode": "Account"
+      },
+      "proPlusTrial": {
+        "isAvailable": true,
+        "trialDays": 7,
+        "trialBindingMode": "Account"
+      }
+    },
+    "concurrentSessions": {
+      "sessionTimeout": {
+        "missedHeartbeats": 3,
+        "graceMinutes": 15,
+        "shouldRelease": true
+      },
+      "forceRelease": {
+        "ownerCanRelease": true,
+        "adminCanRelease": true
+      },
+      "maxSeatsEnforcement": {
+        "maxSeats": 10,
+        "shouldRejectAt": 11
+      }
+    },
+    "graduatedLimits": {
+      "export-batch.maxObjects": {
+        "free": 10,
+        "pro": 100,
+        "pro-plus": null
+      }
+    },
+    "commands": [
+      {
+        "name": "GGCONCTEST",
+        "expectedOutput": "Concurrent plugin executed",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGCONCINFO",
+        "expectedOutput": "PlanTier=Free",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGCONCSESSION",
+        "expectedOutput": "Session acquired",
+        "requiresLicense": true
+      }
+    ]
+  }
+}

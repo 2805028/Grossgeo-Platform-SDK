@@ -1,0 +1,188 @@
+{
+  "$schema": "./product-manifest.schema.json",
+
+  "product": {
+    "name": "Test Product Subscription",
+    "slug": "test-product-subscription",
+    "shortDescription": "Тестовый продукт с Trial и подпиской (Monthly/Yearly)",
+    "fullDescription": "Плагин для тестирования подписочной модели. Trial 14 дней, Standard (Monthly/Yearly) и Pro планы. Демонстрирует PlanTier.Pro/ProPlus, BillingModel.Subscription, BillingPeriod.Monthly/Yearly, LicenseMode.User, FeatureLimit MaxPerPeriod.",
+    "licensingMode": "GrossGeo",
+    "externalPurchaseUrl": null,
+    "externalDownloadUrl": null,
+    "externalLicenseInstructions": null,
+    "trialDays": 14,
+    "tags": ["subscription", "trial", "testing"]
+  },
+
+  "plans": [
+    {
+      "code": "standard",
+      "name": "Standard",
+      "displayName": "Стандартный (Monthly)",
+      "tier": "Pro",
+      "billingModel": "Subscription",
+      "billingPeriod": "Monthly",
+      "licenseMode": "User",
+      "monthlyPrice": 990,
+      "yearlyPrice": null,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 14,
+      "trialBindingMode": "Account",
+      "isActive": true
+    },
+    {
+      "code": "standard-yearly",
+      "name": "Standard Yearly",
+      "displayName": "Стандартный (Yearly)",
+      "tier": "Pro",
+      "billingModel": "Subscription",
+      "billingPeriod": "Yearly",
+      "licenseMode": "User",
+      "monthlyPrice": null,
+      "yearlyPrice": 9900,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "isActive": true
+    },
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "tier": "ProPlus",
+      "billingModel": "Subscription",
+      "billingPeriod": "Monthly",
+      "licenseMode": "User",
+      "monthlyPrice": 1990,
+      "yearlyPrice": null,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "isActive": true
+    }
+  ],
+
+  "features": [
+    {
+      "code": "basic",
+      "name": "Базовый функционал",
+      "description": "Основные инструменты продукта",
+      "isDefault": true,
+      "isPublic": false
+    },
+    {
+      "code": "export",
+      "name": "Экспорт",
+      "description": "Экспорт данных в различные форматы",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "advanced-export",
+      "name": "Расширенный экспорт",
+      "description": "Пакетный экспорт, шаблоны, автоматизация",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "batch",
+      "name": "Пакетная обработка",
+      "description": "Пакетная обработка нескольких файлов",
+      "isDefault": false,
+      "isPublic": false
+    }
+  ],
+
+  "planFeatures": {
+    "standard": ["basic", "export"],
+    "standard-yearly": ["basic", "export"],
+    "pro": ["basic", "export", "advanced-export", "batch"]
+  },
+
+  "featureLimits": {
+    "standard.export": [
+      {
+        "limitCode": "monthlyExports",
+        "limitType": "MaxPerPeriod",
+        "limitValue": 100
+      }
+    ],
+    "standard-yearly.export": null,
+    "pro.export": null
+  },
+
+  "releases": [
+    {
+      "version": "1.0.0",
+      "channel": "Stable",
+      "changelog": "Первый релиз. Standard и Pro планы, Trial 14 дней.",
+      "distributionType": "Bundle",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "Contents/TestProduct.Subscription.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD", "Civil3D"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": true,
+      "fixtureFile": "fixtures/TestProduct.Subscription.v1.0.0.bundle.zip"
+    },
+    {
+      "version": "1.1.0",
+      "channel": "Stable",
+      "changelog": "Добавлен Yearly план, новая feature в Pro, MaxPerPeriod limit для экспорта.",
+      "distributionType": "Bundle",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "Contents/TestProduct.Subscription.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD", "Civil3D"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": true,
+      "fixtureFile": "fixtures/TestProduct.Subscription.v1.1.0.bundle.zip"
+    }
+  ],
+
+  "expectations": {
+    "sdkInit": {
+      "isValid": true,
+      "expectedPlanTier": "Pro",
+      "expectedBillingModel": "Subscription"
+    },
+    "trial": {
+      "isAvailable": true,
+      "trialDays": 14,
+      "trialBindingMode": "Account"
+    },
+    "commands": [
+      {
+        "name": "GGSUBSTEST",
+        "expectedOutput": "Subscription plugin executed",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGSUBSINFO",
+        "expectedOutput": "PlanTier=Pro",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGSUBSEXPORT",
+        "expectedOutput": "Export completed",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGSUBSBATCH",
+        "expectedOutput": "Batch processing",
+        "requiresLicense": true
+      }
+    ]
+  }
+}
