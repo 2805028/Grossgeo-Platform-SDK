@@ -383,164 +383,321 @@ FeatureGuard.OrThrow("export", () => DoExport());
 
 ---
 
-## Манифест PackageContents.xml
+## Манифест продукта (product-manifest.json)
 
-Чтобы AutoCAD автоматически обнаруживал и загружал ваш плагин, необходимо создать манифест `PackageContents.xml` внутри каталога `.bundle`.
+При создании продукта на платформе GrossGeo разработчик описывает его через `product-manifest.json`. Этот файл определяет метаданные продукта, тарифные планы, фичи, лимиты и релизы.
 
-### Структура `.bundle`
+> **Примечание:** `PackageContents.xml` для AutoCAD Autoloader генерируется платформой автоматически при установке — создавать его вручную не нужно.
 
-```text
-MyPlugin.bundle/
-  PackageContents.xml          ← манифест (обязателен в корне)
-  Contents/
-    MyPlugin.dll               ← ваш плагин
-    GrossGeo.SDK.Stub.dll      ← SDK (копируется автоматически)
-    GrossGeo.Contracts.dll     ← Contracts (копируется автоматически)
+### Минимальный манифест (бесплатный продукт)
+
+```json
+{
+  "product": {
+    "name": "My Plugin",
+    "slug": "my-plugin",
+    "shortDescription": "Краткое описание плагина",
+    "fullDescription": "Полное описание плагина для страницы в каталоге",
+    "licensingMode": "GrossGeo",
+    "trialDays": 0,
+    "tags": ["autocad", "tools"]
+  },
+
+  "plans": [
+    {
+      "code": "free",
+      "name": "Free",
+      "displayName": "Бесплатный",
+      "tier": "Free",
+      "billingModel": "Free",
+      "billingPeriod": null,
+      "licenseMode": "Machine",
+      "monthlyPrice": 0,
+      "yearlyPrice": 0,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "isActive": true
+    }
+  ],
+
+  "features": [
+    {
+      "code": "basic",
+      "name": "Базовый функционал",
+      "description": "Основные инструменты",
+      "isDefault": true,
+      "isPublic": true
+    }
+  ],
+
+  "planFeatures": {
+    "free": ["basic"]
+  },
+
+  "featureLimits": {},
+
+  "releases": [
+    {
+      "version": "1.0.0",
+      "channel": "Stable",
+      "changelog": "Первый релиз",
+      "distributionType": "Bundle",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "Contents/MyPlugin.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD", "Civil3D"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": true,
+      "fixtureFile": "fixtures/MyPlugin.v1.0.0.bundle.zip"
+    }
+  ]
+}
 ```
 
-> **Путь установки:**  
-> `%APPDATA%\Autodesk\ApplicationPlugins\MyPlugin.bundle\`  
-> или `%PROGRAMDATA%\Autodesk\ApplicationPlugins\MyPlugin.bundle\`
+### Структура манифеста
 
-### Минимальный манифест (один TFM)
+#### `product` — метаданные продукта
 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<ApplicationPackage
-  SchemaVersion="1.0"
-  AppVersion="1.0.0"
-  Name="MyPlugin"
-  Description="Описание вашего плагина"
-  Author="Your Company"
-  ProductCode="{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
-  UpgradeCode="{YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY}">
+| Поле | Тип | Обязательно | Описание |
+|------|-----|:-----------:|----------|
+| `name` | `string` | ✅ | Название продукта |
+| `slug` | `string` | ✅ | URL-идентификатор (латиница, дефисы) |
+| `shortDescription` | `string` | ✅ | Краткое описание (1-2 предложения) |
+| `fullDescription` | `string` | ✅ | Полное описание для каталога |
+| `licensingMode` | `string` | ✅ | Режим лицензирования (см. ниже) |
+| `trialDays` | `int` | ✅ | Длительность trial-периода (0 = без trial) |
+| `tags` | `string[]` | — | Теги для поиска в каталоге |
+| `externalPurchaseUrl` | `string?` | — | URL покупки (для ExternalOnly) |
+| `externalDownloadUrl` | `string?` | — | URL скачивания (для ExternalOnly) |
+| `externalLicenseInstructions` | `string?` | — | Инструкция активации (для ExternalOnly) |
 
-  <CompanyDetails Name="Your Company" Url="https://example.com" />
+**`licensingMode`:**
 
-  <Components Description="MyPlugin components">
-    <!-- AutoCAD -->
-    <ComponentEntry
-      AppName="MyPlugin"
-      ModuleName="./Contents/MyPlugin.dll"
-      AppDescription="MyPlugin for AutoCAD"
-      AppType=".Net"
-      LoadOnAutoCADStartup="True">
-      <RuntimeRequirements OS="Win64" Platform="AutoCAD"
-        SeriesMin="R25.0" SeriesMax="R25.0" />
-    </ComponentEntry>
+| Значение | Описание |
+|----------|----------|
+| `GrossGeo` | Лицензирование через платформу (SDK + планы + фичи) |
+| `ExternalOnly` | Каталог и аналитика через GrossGeo, лицензирование — на стороне разработчика |
 
-    <!-- Civil3D (если поддерживается) -->
-    <ComponentEntry
-      AppName="MyPlugin"
-      ModuleName="./Contents/MyPlugin.dll"
-      AppDescription="MyPlugin for Civil3D"
-      AppType=".Net"
-      LoadOnAutoCADStartup="True">
-      <RuntimeRequirements OS="Win64" Platform="Civil3D"
-        SeriesMin="R25.0" SeriesMax="R25.0" />
-    </ComponentEntry>
-  </Components>
-</ApplicationPackage>
+#### `plans[]` — тарифные планы
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `code` | `string` | Уникальный код плана (латиница, дефисы) |
+| `name` | `string` | Системное имя |
+| `displayName` | `string` | Отображаемое имя |
+| `tier` | `string` | Уровень: `Free`, `Pro`, `ProPlus`, `Maintenance`, `Enterprise` |
+| `billingModel` | `string` | Модель: `Free`, `Subscription`, `Perpetual`, `Contract` |
+| `billingPeriod` | `string?` | Период: `Monthly`, `Yearly`, `OneTime`, `null` |
+| `licenseMode` | `string` | Режим: `User`, `Machine`, `Concurrent` |
+| `monthlyPrice` | `decimal?` | Цена за месяц |
+| `yearlyPrice` | `decimal?` | Цена за год |
+| `oneTimePrice` | `decimal?` | Разовая цена (Perpetual) |
+| `currency` | `string` | Валюта (`RUB`, `USD`) |
+| `maxSeats` | `int` | Количество рабочих мест |
+| `maxConcurrentSessions` | `int?` | Макс. одновременных сессий (для Concurrent) |
+| `trialDays` | `int` | Trial для этого плана (0 = без trial) |
+| `trialBindingMode` | `string?` | Привязка trial: `Account`, `Machine`, `AccountAndMachine` |
+| `requiresPlanCode` | `string?` | Код плана-зависимости (напр., Maintenance требует Pro) |
+| `isActive` | `bool` | Активен ли план |
+
+#### `features[]` — фичи продукта
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `code` | `string` | Уникальный код фичи |
+| `name` | `string` | Название |
+| `description` | `string` | Описание |
+| `isDefault` | `bool` | Включена в план по умолчанию |
+| `isPublic` | `bool` | Доступна без лицензии (публичная фича) |
+
+#### `planFeatures` — привязка фичей к планам
+
+```json
+{
+  "free": ["basic-tools", "simple-export"],
+  "pro": ["basic-tools", "simple-export", "advanced-tools", "batch"]
+}
 ```
 
-### Мульти-таргет (AutoCAD 2019–2024 + 2025+)
+Ключ — `code` плана, значение — массив `code` фичей.
 
-Если плагин собирается под оба TFM (`net48` + `net8.0-windows`), создайте **отдельный `ComponentEntry`** для каждого диапазона версий:
+#### `featureLimits` — количественные ограничения
 
-```xml
-<Components Description="MyPlugin components">
-  <!-- AutoCAD 2019–2024 (.NET Framework 4.8) -->
-  <ComponentEntry
-    AppName="MyPlugin (NetFx)"
-    ModuleName="./Contents/net48/MyPlugin.dll"
-    AppDescription="MyPlugin for AutoCAD 2019-2024"
-    AppType=".Net"
-    LoadOnAutoCADStartup="True">
-    <RuntimeRequirements OS="Win64" Platform="AutoCAD"
-      SeriesMin="R23.0" SeriesMax="R24.4" />
-  </ComponentEntry>
+Ключ формата `{planCode}.{featureCode}`, значение — массив лимитов или `null` (без ограничений):
 
-  <!-- AutoCAD 2025+ (.NET 8) -->
-  <ComponentEntry
-    AppName="MyPlugin (Net8)"
-    ModuleName="./Contents/net8.0-windows/MyPlugin.dll"
-    AppDescription="MyPlugin for AutoCAD 2025+"
-    AppType=".Net"
-    LoadOnAutoCADStartup="True">
-    <RuntimeRequirements OS="Win64" Platform="AutoCAD"
-      SeriesMin="R25.0" SeriesMax="R25.0" />
-  </ComponentEntry>
-</Components>
+```json
+{
+  "free.simple-export": [
+    {
+      "limitCode": "maxObjects",
+      "limitType": "MaxPerCall",
+      "limitValue": 5
+    },
+    {
+      "limitCode": "maxFileSize",
+      "limitType": "MaxSize",
+      "limitValue": 10485760
+    }
+  ],
+  "pro.simple-export": null
+}
 ```
 
-Структура `.bundle` для мульти-таргета:
+**Типы лимитов (`limitType`):**
 
-```text
-MyPlugin.bundle/
-  PackageContents.xml
-  Contents/
-    net48/
-      MyPlugin.dll
-      GrossGeo.SDK.Stub.dll
-      GrossGeo.Contracts.dll
-    net8.0-windows/
-      MyPlugin.dll
-      GrossGeo.SDK.Stub.dll
-      GrossGeo.Contracts.dll
+| Тип | Описание | Пример |
+|-----|----------|--------|
+| `MaxPerCall` | Максимум за одну операцию | 5 объектов в экспорте |
+| `MaxPerSession` | Максимум за сессию | 50 операций |
+| `MaxPerPeriod` | Максимум за период (месяц) | 100 экспортов/мес |
+| `MaxSize` | Максимальный размер (байты) | 10 MB |
+
+#### `releases[]` — релизы продукта
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `version` | `string` | Версия (SemVer) |
+| `channel` | `string` | Канал: `Stable`, `Beta`, `Alpha` |
+| `changelog` | `string` | Описание изменений |
+| `distributionType` | `string` | Тип: `Bundle` (Autoloader) или `Installer` (EXE) |
+| `postInstallAction` | `string` | Действие: `RequireRestart`, `None` |
+| `netloadDllPath` | `string?` | Путь к DLL внутри bundle (для `Bundle`) |
+| `minAutoCADVersion` | `string` | Мин. серия AutoCAD (например, `R24.4`) |
+| `maxAutoCADVersion` | `string` | Макс. серия AutoCAD (например, `R25.0`) |
+| `targetPlatforms` | `string[]` | Платформы: `AutoCAD`, `Civil3D`, `Map` |
+| `supportedOS` | `string[]` | ОС: `Win64` |
+| `loadOnStartup` | `bool` | Загружать при старте AutoCAD |
+| `fixtureFile` | `string` | Путь к `.bundle.zip` файлу |
+
+### Примеры сценариев
+
+#### Подписка с trial
+
+```json
+{
+  "product": {
+    "name": "GeoExport Pro",
+    "slug": "geoexport-pro",
+    "licensingMode": "GrossGeo",
+    "trialDays": 14,
+    ...
+  },
+  "plans": [
+    {
+      "code": "standard",
+      "tier": "Pro",
+      "billingModel": "Subscription",
+      "billingPeriod": "Monthly",
+      "licenseMode": "User",
+      "monthlyPrice": 990,
+      "trialDays": 14,
+      "trialBindingMode": "Account",
+      ...
+    }
+  ]
+}
 ```
 
-### Загрузка по команде (on-demand)
+#### Perpetual + Maintenance
 
-Если плагин не нужен при каждом запуске AutoCAD, используйте загрузку по команде — это ускоряет старт AutoCAD:
-
-```xml
-<ComponentEntry
-  AppName="MyPlugin"
-  ModuleName="./Contents/MyPlugin.dll"
-  AppType=".Net"
-  LoadOnCommandInvocation="True">
-  <RuntimeRequirements OS="Win64" Platform="AutoCAD"
-    SeriesMin="R25.0" SeriesMax="R25.0" />
-  <Commands GroupName="MyPlugin">
-    <Command Global="MYPLUGIN" Local="MYPLUGIN" />
-    <Command Global="MYPLUGIN_SETTINGS" Local="MYPLUGIN_SETTINGS" />
-  </Commands>
-</ComponentEntry>
+```json
+{
+  "plans": [
+    {
+      "code": "pro",
+      "tier": "Pro",
+      "billingModel": "Perpetual",
+      "billingPeriod": "OneTime",
+      "licenseMode": "Machine",
+      "oneTimePrice": 9990,
+      ...
+    },
+    {
+      "code": "maintenance",
+      "tier": "Maintenance",
+      "billingModel": "Subscription",
+      "billingPeriod": "Yearly",
+      "yearlyPrice": 2990,
+      "requiresPlanCode": "pro",
+      ...
+    }
+  ]
+}
 ```
 
-> ⚠️ При `LoadOnCommandInvocation="True"` блок `<Commands>` **обязателен**, иначе модуль не загрузится.
+#### Concurrent (плавающие лицензии)
 
-### Версии AutoCAD и серии
-
-| AutoCAD | Серия | TFM |
-|---------|-------|-----|
-| 2019 | R23.0 | net48 |
-| 2020 | R23.1 | net48 |
-| 2021 | R24.0 | net48 |
-| 2022 | R24.1 | net48 |
-| 2023 | R24.2 | net48 |
-| 2024 | R24.3–R24.4 | net48 |
-| 2025 | R25.0 | net8.0-windows |
-
-### GUID
-
-- **`ProductCode`** — уникальный GUID для каждого релиза (можно менять между версиями)
-- **`UpgradeCode`** — стабильный GUID линии продукта (не менять!)
-
-Генерация GUID:
-
-```powershell
-[guid]::NewGuid().ToString("B").ToUpper()
-# {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+```json
+{
+  "plans": [
+    {
+      "code": "team",
+      "tier": "ProPlus",
+      "billingModel": "Subscription",
+      "licenseMode": "Concurrent",
+      "maxSeats": 10,
+      "maxConcurrentSessions": 10,
+      ...
+    }
+  ]
+}
 ```
 
-### Ключевые правила
+#### Freemium (Free + Pro с лимитами)
 
-1. `PackageContents.xml` — **в корне** папки `.bundle`
-2. Пути в `ModuleName` — **относительные** с `./`, разделитель `/`
-3. Отдельный `ComponentEntry` для каждой **платформы** (AutoCAD, Civil3D)
-4. Отдельный `ComponentEntry` для каждого **диапазона серий** при мульти-таргете
-5. `UpgradeCode` — **не менять** между релизами
+```json
+{
+  "plans": [
+    { "code": "free", "tier": "Free", "billingModel": "Free", ... },
+    { "code": "pro", "tier": "Pro", "billingModel": "Subscription", ... }
+  ],
+  "planFeatures": {
+    "free": ["basic-tools", "export"],
+    "pro": ["basic-tools", "export", "advanced", "batch"]
+  },
+  "featureLimits": {
+    "free.export": [{ "limitCode": "maxObjects", "limitType": "MaxPerCall", "limitValue": 5 }],
+    "pro.export": null
+  }
+}
+```
+
+#### Внешнее лицензирование (ExternalOnly)
+
+```json
+{
+  "product": {
+    "name": "My External Plugin",
+    "licensingMode": "ExternalOnly",
+    "externalPurchaseUrl": "https://example.com/buy",
+    "externalDownloadUrl": "https://example.com/download",
+    "externalLicenseInstructions": "Получите ключ на сайте и введите в настройках плагина",
+    ...
+  },
+  "plans": [],
+  "features": [],
+  "planFeatures": {},
+  "featureLimits": {}
+}
+```
+
+### Полные примеры
+
+Все примеры `product-manifest.json` доступны в каталоге [`samples/`](https://github.com/2805028/Grossgeo-Platform-SDK/tree/main/samples):
+
+| Пример | Сценарий |
+|--------|----------|
+| `TestProduct.Free` | Бесплатный продукт |
+| `TestProduct.Licensed` | Perpetual + Maintenance |
+| `TestProduct.Subscription` | Подписка с trial |
+| `TestProduct.Freemium` | Free + Pro с Feature Limits |
+| `TestProduct.Concurrent` | Плавающие лицензии (Concurrent) |
+| `TestProduct.Analytics` | Внешнее лицензирование (ExternalOnly) |
 
 ---
 
