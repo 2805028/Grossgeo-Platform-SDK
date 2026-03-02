@@ -383,6 +383,167 @@ FeatureGuard.OrThrow("export", () => DoExport());
 
 ---
 
+## Манифест PackageContents.xml
+
+Чтобы AutoCAD автоматически обнаруживал и загружал ваш плагин, необходимо создать манифест `PackageContents.xml` внутри каталога `.bundle`.
+
+### Структура `.bundle`
+
+```text
+MyPlugin.bundle/
+  PackageContents.xml          ← манифест (обязателен в корне)
+  Contents/
+    MyPlugin.dll               ← ваш плагин
+    GrossGeo.SDK.Stub.dll      ← SDK (копируется автоматически)
+    GrossGeo.Contracts.dll     ← Contracts (копируется автоматически)
+```
+
+> **Путь установки:**  
+> `%APPDATA%\Autodesk\ApplicationPlugins\MyPlugin.bundle\`  
+> или `%PROGRAMDATA%\Autodesk\ApplicationPlugins\MyPlugin.bundle\`
+
+### Минимальный манифест (один TFM)
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage
+  SchemaVersion="1.0"
+  AppVersion="1.0.0"
+  Name="MyPlugin"
+  Description="Описание вашего плагина"
+  Author="Your Company"
+  ProductCode="{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
+  UpgradeCode="{YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY}">
+
+  <CompanyDetails Name="Your Company" Url="https://example.com" />
+
+  <Components Description="MyPlugin components">
+    <!-- AutoCAD -->
+    <ComponentEntry
+      AppName="MyPlugin"
+      ModuleName="./Contents/MyPlugin.dll"
+      AppDescription="MyPlugin for AutoCAD"
+      AppType=".Net"
+      LoadOnAutoCADStartup="True">
+      <RuntimeRequirements OS="Win64" Platform="AutoCAD"
+        SeriesMin="R25.0" SeriesMax="R25.0" />
+    </ComponentEntry>
+
+    <!-- Civil3D (если поддерживается) -->
+    <ComponentEntry
+      AppName="MyPlugin"
+      ModuleName="./Contents/MyPlugin.dll"
+      AppDescription="MyPlugin for Civil3D"
+      AppType=".Net"
+      LoadOnAutoCADStartup="True">
+      <RuntimeRequirements OS="Win64" Platform="Civil3D"
+        SeriesMin="R25.0" SeriesMax="R25.0" />
+    </ComponentEntry>
+  </Components>
+</ApplicationPackage>
+```
+
+### Мульти-таргет (AutoCAD 2019–2024 + 2025+)
+
+Если плагин собирается под оба TFM (`net48` + `net8.0-windows`), создайте **отдельный `ComponentEntry`** для каждого диапазона версий:
+
+```xml
+<Components Description="MyPlugin components">
+  <!-- AutoCAD 2019–2024 (.NET Framework 4.8) -->
+  <ComponentEntry
+    AppName="MyPlugin (NetFx)"
+    ModuleName="./Contents/net48/MyPlugin.dll"
+    AppDescription="MyPlugin for AutoCAD 2019-2024"
+    AppType=".Net"
+    LoadOnAutoCADStartup="True">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD"
+      SeriesMin="R23.0" SeriesMax="R24.4" />
+  </ComponentEntry>
+
+  <!-- AutoCAD 2025+ (.NET 8) -->
+  <ComponentEntry
+    AppName="MyPlugin (Net8)"
+    ModuleName="./Contents/net8.0-windows/MyPlugin.dll"
+    AppDescription="MyPlugin for AutoCAD 2025+"
+    AppType=".Net"
+    LoadOnAutoCADStartup="True">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD"
+      SeriesMin="R25.0" SeriesMax="R25.0" />
+  </ComponentEntry>
+</Components>
+```
+
+Структура `.bundle` для мульти-таргета:
+
+```text
+MyPlugin.bundle/
+  PackageContents.xml
+  Contents/
+    net48/
+      MyPlugin.dll
+      GrossGeo.SDK.Stub.dll
+      GrossGeo.Contracts.dll
+    net8.0-windows/
+      MyPlugin.dll
+      GrossGeo.SDK.Stub.dll
+      GrossGeo.Contracts.dll
+```
+
+### Загрузка по команде (on-demand)
+
+Если плагин не нужен при каждом запуске AutoCAD, используйте загрузку по команде — это ускоряет старт AutoCAD:
+
+```xml
+<ComponentEntry
+  AppName="MyPlugin"
+  ModuleName="./Contents/MyPlugin.dll"
+  AppType=".Net"
+  LoadOnCommandInvocation="True">
+  <RuntimeRequirements OS="Win64" Platform="AutoCAD"
+    SeriesMin="R25.0" SeriesMax="R25.0" />
+  <Commands GroupName="MyPlugin">
+    <Command Global="MYPLUGIN" Local="MYPLUGIN" />
+    <Command Global="MYPLUGIN_SETTINGS" Local="MYPLUGIN_SETTINGS" />
+  </Commands>
+</ComponentEntry>
+```
+
+> ⚠️ При `LoadOnCommandInvocation="True"` блок `<Commands>` **обязателен**, иначе модуль не загрузится.
+
+### Версии AutoCAD и серии
+
+| AutoCAD | Серия | TFM |
+|---------|-------|-----|
+| 2019 | R23.0 | net48 |
+| 2020 | R23.1 | net48 |
+| 2021 | R24.0 | net48 |
+| 2022 | R24.1 | net48 |
+| 2023 | R24.2 | net48 |
+| 2024 | R24.3–R24.4 | net48 |
+| 2025 | R25.0 | net8.0-windows |
+
+### GUID
+
+- **`ProductCode`** — уникальный GUID для каждого релиза (можно менять между версиями)
+- **`UpgradeCode`** — стабильный GUID линии продукта (не менять!)
+
+Генерация GUID:
+
+```powershell
+[guid]::NewGuid().ToString("B").ToUpper()
+# {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+```
+
+### Ключевые правила
+
+1. `PackageContents.xml` — **в корне** папки `.bundle`
+2. Пути в `ModuleName` — **относительные** с `./`, разделитель `/`
+3. Отдельный `ComponentEntry` для каждой **платформы** (AutoCAD, Civil3D)
+4. Отдельный `ComponentEntry` для каждого **диапазона серий** при мульти-таргете
+5. `UpgradeCode` — **не менять** между релизами
+
+---
+
 ## Примеры плагинов
 
 | Пример | Описание |
