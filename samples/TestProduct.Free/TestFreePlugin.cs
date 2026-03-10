@@ -23,7 +23,7 @@ namespace TestProduct.Free
     public class TestFreePlugin : IExtensionApplication
     {
         // API Key из DbSeeder.FreePluginId
-        private const string ProductKey = "GG-FREE-TEST-0001";
+        private const string ProductKey = "GG-974A-E898-5FBB-66FF";
         private const string PluginVersion = "1.0.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
@@ -201,3 +201,4 @@ namespace TestProduct.Free
         #endregion
     }
 }
+

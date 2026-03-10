@@ -23,8 +23,8 @@ namespace TestProduct.Subscription
     public class TestSubscriptionPlugin : IExtensionApplication
     {
         // API Key из DbSeeder.TrialSubscriptionPluginId
-        private const string ProductKey = "GG-SUBS-TEST-0002";
-        private const string PluginVersion = "2.1.0";
+        private const string ProductKey = "GG-6E14-65BB-EF41-92C2";
+        private const string PluginVersion = "1.1.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
@@ -33,7 +33,7 @@ namespace TestProduct.Subscription
         public void Initialize()
         {
             WriteMessage("\n╔══════════════════════════════════════════════════════════════╗");
-            WriteMessage("║  🔄 TEST PRODUCT SUBSCRIPTION v2.1.0                          ║");
+            WriteMessage("║  🔄 TEST PRODUCT SUBSCRIPTION v1.1.0                          ║");
             WriteMessage("║  Trial 14 дней → Подписка Standard/Pro                        ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
             WriteMessage("║  v2: PlanTier=Pro, BillingModel=Subscription, Mode=User        ║");
@@ -283,3 +283,4 @@ namespace TestProduct.Subscription
         #endregion
     }
 }
+

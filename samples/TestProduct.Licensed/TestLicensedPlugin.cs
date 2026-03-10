@@ -24,8 +24,8 @@ namespace TestProduct.Licensed
     public class TestLicensedPlugin : IExtensionApplication
     {
         // API Key из DbSeeder.PaidPerpetualPluginId
-        private const string ProductKey = "GG-PAID-TEST-0003";
-        private const string PluginVersion = "3.0.0";
+        private const string ProductKey = "GG-4CE5-8D13-2CB8-032F";
+        private const string PluginVersion = "1.1.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
@@ -34,7 +34,7 @@ namespace TestProduct.Licensed
         public void Initialize()
         {
             WriteMessage("\n╔══════════════════════════════════════════════════════════════╗");
-            WriteMessage("║  💎 TEST PRODUCT LICENSED v3.0.0                              ║");
+            WriteMessage("║  💎 TEST PRODUCT LICENSED v1.1.0                              ║");
             WriteMessage("║  Perpetual лицензия (разовая покупка)                         ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
             WriteMessage("║  v2: PlanTier=Pro, BillingModel=Perpetual, Mode=Machine       ║");
@@ -317,3 +317,4 @@ namespace TestProduct.Licensed
         #endregion
     }
 }
+

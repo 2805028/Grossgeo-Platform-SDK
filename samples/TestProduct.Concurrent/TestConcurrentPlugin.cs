@@ -25,7 +25,7 @@ namespace TestProduct.Concurrent
     public class TestConcurrentPlugin : IExtensionApplication
     {
         // API Key из DbSeeder.ConcurrentPluginId
-        private const string ProductKey = "GG-CONC-TEST-0006";
+        private const string ProductKey = "GG-FAAE-36D8-1C93-BD79";
         private const string PluginVersion = "1.0.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
@@ -478,3 +478,4 @@ namespace TestProduct.Concurrent
         #endregion
     }
 }
+

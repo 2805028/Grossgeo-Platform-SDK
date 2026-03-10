@@ -37,16 +37,23 @@
 
   "features": [
     {
-      "code": "basic-view",
-      "name": "Базовый просмотр",
-      "description": "Основной функционал просмотра",
+      "code": "view-objects",
+      "name": "Просмотр объектов",
+      "description": "Базовый просмотр объектов на чертеже",
+      "isDefault": true,
+      "isPublic": true
+    },
+    {
+      "code": "basic-info",
+      "name": "Базовая информация",
+      "description": "Отображение базовой информации об объектах",
       "isDefault": true,
       "isPublic": true
     }
   ],
 
   "planFeatures": {
-    "free": ["basic-view"]
+    "free": ["view-objects", "basic-info"]
   },
 
   "featureLimits": {},
@@ -91,12 +98,22 @@
     "commands": [
       {
         "name": "GGFREETEST",
-        "expectedOutput": "Free plugin executed",
+        "expectedOutput": "Команда работает без лицензии",
         "requiresLicense": false
       },
       {
         "name": "GGFREEINFO",
         "expectedOutput": "PlanTier=Free",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGFREEPUBLIC",
+        "expectedOutput": "view-objects",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGFREEHELP",
+        "expectedOutput": "TEST PRODUCT FREE",
         "requiresLicense": false
       }
     ]

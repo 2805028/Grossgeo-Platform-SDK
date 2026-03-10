@@ -1,0 +1,134 @@
+{
+  "$schema": "./product-manifest.schema.json",
+
+  "product": {
+    "name": "Test Product PluginDll",
+    "slug": "test-product-plugindll",
+    "shortDescription": "Тестовый продукт с типом дистрибуции PluginDll (одиночная DLL)",
+    "fullDescription": "Плагин для тестирования установки через одиночную DLL. Демонстрирует DistributionType.PluginDll — самый простой тип поставки без bundle. DLL загружается через NETLOAD или устанавливается в GrossGeoPlatformApps.bundle.",
+    "licensingMode": "GrossGeo",
+    "externalPurchaseUrl": null,
+    "externalDownloadUrl": null,
+    "externalLicenseInstructions": null,
+    "trialDays": 14,
+    "tags": ["plugindll", "perpetual", "testing"]
+  },
+
+  "plans": [
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "tier": "Pro",
+      "billingModel": "Perpetual",
+      "billingPeriod": "OneTime",
+      "licenseMode": "Machine",
+      "monthlyPrice": null,
+      "yearlyPrice": null,
+      "oneTimePrice": 4990,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 14,
+      "trialBindingMode": "AccountAndMachine",
+      "isActive": true
+    }
+  ],
+
+  "features": [
+    {
+      "code": "core",
+      "name": "Ядро",
+      "description": "Основной функционал плагина",
+      "isDefault": true,
+      "isPublic": false
+    },
+    {
+      "code": "reporting",
+      "name": "Отчётность",
+      "description": "Генерация отчётов по объектам чертежа",
+      "isDefault": false,
+      "isPublic": false
+    }
+  ],
+
+  "planFeatures": {
+    "pro": ["core", "reporting"]
+  },
+
+  "featureLimits": {
+    "pro.reporting": [
+      {
+        "limitCode": "maxPerCall",
+        "limitType": "MaxPerCall",
+        "limitValue": 500
+      }
+    ]
+  },
+
+  "releases": [
+    {
+      "version": "1.0.0",
+      "channel": "Stable",
+      "changelog": "Первый релиз. Тип дистрибуции PluginDll.",
+      "distributionType": "PluginDll",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "TestProduct.PluginDll.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": false,
+      "fixtureFile": "fixtures/TestProduct.PluginDll.v1.0.0.dll.zip"
+    },
+    {
+      "version": "1.1.0",
+      "channel": "Stable",
+      "changelog": "Обновление: добавлен отчёт, Feature Limits.",
+      "distributionType": "PluginDll",
+      "postInstallAction": "RequireRestart",
+      "netloadDllPath": "TestProduct.PluginDll.dll",
+      "minAutoCADVersion": "R24.4",
+      "maxAutoCADVersion": "R25.0",
+      "targetPlatforms": ["AutoCAD"],
+      "supportedOS": ["Win64"],
+      "loadOnStartup": false,
+      "fixtureFile": "fixtures/TestProduct.PluginDll.v1.1.0.dll.zip"
+    }
+  ],
+
+  "expectations": {
+    "sdkInit": {
+      "isValid": true,
+      "expectedPlanTier": "Pro",
+      "expectedBillingModel": "Perpetual"
+    },
+    "trial": {
+      "isAvailable": true,
+      "trialDays": 14,
+      "trialBindingMode": "AccountAndMachine"
+    },
+    "commands": [
+      {
+        "name": "GGDLLTEST",
+        "expectedOutput": "PluginDll plugin executed",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGDLLINFO",
+        "expectedOutput": "PlanTier",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGDLLREPORT",
+        "expectedOutput": "Отчёт сформирован",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGDLLHELP",
+        "expectedOutput": "TEST PRODUCT PLUGINDLL",
+        "requiresLicense": false
+      }
+    ]
+  }
+}

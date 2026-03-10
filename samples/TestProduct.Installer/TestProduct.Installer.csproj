@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
-    <RootNamespace>TestProduct.Concurrent</RootNamespace>
-    <AssemblyName>TestProduct.Concurrent</AssemblyName>
+    <RootNamespace>TestProduct.Installer</RootNamespace>
+    <AssemblyName>TestProduct.Installer</AssemblyName>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -12,13 +12,20 @@
     <!-- Product Info -->
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
-    <Product>Test Product Concurrent</Product>
-    <Description>Тестовый Multi-tier продукт с Concurrent лицензированием (v2)</Description>
+    <Product>Test Product Installer</Product>
+    <Description>Тестовый продукт с типом дистрибуции Installer (MSI/EXE)</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
+
+  <!-- StubInstaller — отдельный проект внутри директории, исключаем из рекурсивного glob -->
+  <ItemGroup>
+    <Compile Remove="StubInstaller\**" />
+    <None Remove="StubInstaller\**" />
+    <EmbeddedResource Remove="StubInstaller\**" />
+  </ItemGroup>
 
   <!-- GrossGeo SDK.Stub Reference -->
   <ItemGroup>
@@ -49,6 +56,7 @@
   <!-- Build Configuration -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
 </Project>

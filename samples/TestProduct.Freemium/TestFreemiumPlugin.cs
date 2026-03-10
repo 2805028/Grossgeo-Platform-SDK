@@ -23,8 +23,8 @@ namespace TestProduct.Freemium
     public class TestFreemiumPlugin : IExtensionApplication
     {
         // API Key из DbSeeder.FreemiumPluginId
-        private const string ProductKey = "GG-FRMI-TEST-0004";
-        private const string PluginVersion = "5.2.1";
+        private const string ProductKey = "GG-FB8E-E1E2-0918-C769";
+        private const string PluginVersion = "1.1.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
@@ -33,7 +33,7 @@ namespace TestProduct.Freemium
         public void Initialize()
         {
             WriteMessage("\n╔══════════════════════════════════════════════════════════════╗");
-            WriteMessage("║  ⭐ TEST PRODUCT FREEMIUM v5.2.1                               ║");
+            WriteMessage("║  ⭐ TEST PRODUCT FREEMIUM v1.1.0                               ║");
             WriteMessage("║  Базовые функции бесплатно, PRO по подписке                   ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
             WriteMessage("║  v2: PlanTier=Free/Pro, BillingModel=Free/Subscription        ║");
@@ -404,3 +404,4 @@ namespace TestProduct.Freemium
         #endregion
     }
 }
+

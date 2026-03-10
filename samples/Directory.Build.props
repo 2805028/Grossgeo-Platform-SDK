@@ -1,0 +1,21 @@
+<Project>
+  <!--
+    Общие свойства для тестовых AutoCAD плагинов GrossGeo.
+    
+    AutoCAD начиная с версии 2019 является ТОЛЬКО 64-битным приложением.
+    Поэтому все плагины должны компилироваться для x64 архитектуры.
+    
+    Это устраняет предупреждение MSB3270 о несоответствии архитектур
+    между проектом (MSIL/AnyCPU) и ссылками на AutoCAD DLL (AMD64).
+  -->
+  
+  <PropertyGroup>
+    <!-- AutoCAD 64-bit only - обязательно для корректной работы плагинов -->
+    <PlatformTarget>x64</PlatformTarget>
+    
+    <!-- Подавление предупреждений о конфликте версий сборок .NET и AutoCAD -->
+    <!-- MSB3277: конфликт версий Microsoft.VisualBasic и System.Drawing между .NET 8 и AutoCAD -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+
+</Project>

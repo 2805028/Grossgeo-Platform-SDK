@@ -125,16 +125,21 @@
   "featureLimits": {
     "free.export-batch": [
       {
-        "limitCode": "maxObjects",
+        "limitCode": "maxPerCall",
         "limitType": "MaxPerCall",
         "limitValue": 10
       }
     ],
     "pro.export-batch": [
       {
-        "limitCode": "maxObjects",
+        "limitCode": "maxPerCall",
         "limitType": "MaxPerCall",
         "limitValue": 100
+      },
+      {
+        "limitCode": "maxPerSession",
+        "limitType": "MaxPerSession",
+        "limitValue": 500
       }
     ],
     "pro-plus.export-batch": null,
@@ -146,7 +151,15 @@
         "limitValue": 50
       }
     ],
-    "pro-plus.pro-tools": null
+    "pro-plus.pro-tools": null,
+
+    "pro-plus.cloud-sync": [
+      {
+        "limitCode": "maxSize",
+        "limitType": "MaxSize",
+        "limitValue": 104857600
+      }
+    ]
   },
 
   "releases": [
@@ -214,18 +227,13 @@
       }
     },
     "graduatedLimits": {
-      "export-batch.maxObjects": {
+      "export-batch.maxPerCall": {
         "free": 10,
         "pro": 100,
         "pro-plus": null
       }
     },
     "commands": [
-      {
-        "name": "GGCONCTEST",
-        "expectedOutput": "Concurrent plugin executed",
-        "requiresLicense": false
-      },
       {
         "name": "GGCONCINFO",
         "expectedOutput": "PlanTier=Free",
@@ -235,6 +243,36 @@
         "name": "GGCONCSESSION",
         "expectedOutput": "Session acquired",
         "requiresLicense": true
+      },
+      {
+        "name": "GGCONCSESSIONRELEASE",
+        "expectedOutput": "Session released",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGCONCPUBLIC",
+        "expectedOutput": "view-objects",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGCONCPRO",
+        "expectedOutput": "pro-tools",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGCONCBATCH",
+        "expectedOutput": "export-batch",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGCONCLIMITS",
+        "expectedOutput": "Feature Limits",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGCONCHELP",
+        "expectedOutput": "TEST PRODUCT CONCURRENT",
+        "requiresLicense": false
       }
     ]
   }

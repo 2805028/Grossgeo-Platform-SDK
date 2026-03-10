@@ -1,0 +1,86 @@
+<Project>
+  <!--
+    Общий targets для тестовых продуктов GrossGeo.
+    
+    Создаёт структуру bundle:
+      $(OutputPath)/$(BundleName)/Contents/*.dll
+    
+    И ZIP-архив:
+      $(OutputPath)/$(BundleName)_$(TargetFramework).zip
+    
+    Структура ZIP (содержимое bundle, БЕЗ корневой папки .bundle):
+      Contents/
+        ├── MyPlugin.dll
+        └── Dependencies.dll
+    
+    ВАЖНО: 
+    - ZIP содержит только Contents/, без папки .bundle
+    - PackageContents.xml НЕ создаётся при сборке
+    - User Panel создаёт папку {product-slug}.bundle и генерирует PackageContents.xml
+  -->
+
+  <PropertyGroup>
+    <BundleName Condition="'$(BundleName)' == ''">$(MSBuildProjectName).bundle</BundleName>
+    <!-- Имя ZIP файла включает TFM для multi-target сборок -->
+    <BundleZipName>$(BundleName)_$(TargetFramework).zip</BundleZipName>
+  </PropertyGroup>
+
+  <!-- Создание bundle структуры после сборки -->
+  <Target Name="CreateBundleStructure" AfterTargets="Build">
+    <PropertyGroup>
+      <_BundleOutputDir>$(OutputPath)$(BundleName)</_BundleOutputDir>
+      <_BundleContentsDir>$(_BundleOutputDir)\Contents</_BundleContentsDir>
+    </PropertyGroup>
+    
+    <!-- Создание структуры папок -->
+    <MakeDir Directories="$(_BundleContentsDir)" />
+    
+    <!-- Собираем файлы для копирования -->
+    <ItemGroup>
+      <_BundleDlls Include="$(TargetDir)*.dll" />
+      <_BundlePdbs Include="$(TargetDir)*.pdb" Condition="'$(Configuration)' == 'Debug'" />
+    </ItemGroup>
+    
+    <!-- Копируем DLL и PDB файлы -->
+    <Copy SourceFiles="@(_BundleDlls);@(_BundlePdbs)" 
+          DestinationFolder="$(_BundleContentsDir)" 
+          SkipUnchangedFiles="true" />
+    
+    <Message Importance="high" Text="Bundle created: $(_BundleOutputDir)" />
+  </Target>
+
+  <!-- Создание ZIP после bundle структуры -->
+  <Target Name="CreateBundleZip" AfterTargets="CreateBundleStructure">
+    <PropertyGroup>
+      <_BundleOutputDir>$(OutputPath)$(BundleName)</_BundleOutputDir>
+      <_ZipOutputPath>$(OutputPath)$(BundleZipName)</_ZipOutputPath>
+    </PropertyGroup>
+    
+    <!-- Удаляем старый ZIP -->
+    <Delete Files="$(_ZipOutputPath)" Condition="Exists('$(_ZipOutputPath)')" />
+    
+    <!-- 
+      Создаём ZIP из СОДЕРЖИМОГО bundle папки (без самой папки .bundle)
+      ZIP будет содержать: Contents/*.dll
+      User Panel создаст папку {product-slug}.bundle и распакует туда
+    -->
+    <ZipDirectory 
+        SourceDirectory="$(_BundleOutputDir)" 
+        DestinationFile="$(_ZipOutputPath)"
+        Overwrite="true" />
+    
+    <Message Importance="high" Text="Bundle ZIP created: $(_ZipOutputPath)" />
+    <Message Importance="normal" Text="  Structure inside ZIP: Contents/*.dll (no .bundle folder)" />
+  </Target>
+
+  <!-- Очистка bundle и ZIP при Clean -->
+  <Target Name="CleanBundleStructure" AfterTargets="Clean">
+    <PropertyGroup>
+      <_BundleOutputDir>$(OutputPath)$(BundleName)</_BundleOutputDir>
+      <_ZipOutputPath>$(OutputPath)$(BundleZipName)</_ZipOutputPath>
+    </PropertyGroup>
+    <RemoveDir Directories="$(_BundleOutputDir)" ContinueOnError="true" />
+    <Delete Files="$(_ZipOutputPath)" ContinueOnError="true" />
+  </Target>
+
+</Project>

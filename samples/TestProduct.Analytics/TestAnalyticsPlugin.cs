@@ -23,7 +23,7 @@ namespace TestProduct.Analytics
     public class TestAnalyticsPlugin : IExtensionApplication
     {
         // API Key из DbSeeder.AnalyticsPluginId
-        private const string ProductKey = "GG-ANLT-TEST-0005";
+        private const string ProductKey = "GG-7C1F-02E8-E8DA-4BA1";
         private const string PluginVersion = "1.0.0";
 
         private static int _commandCounter;
@@ -240,3 +240,4 @@ namespace TestProduct.Analytics
         #endregion
     }
 }
+

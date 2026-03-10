@@ -698,6 +698,8 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | `TestProduct.Freemium` | Free + Pro с Feature Limits |
 | `TestProduct.Concurrent` | Плавающие лицензии (Concurrent) |
 | `TestProduct.Analytics` | Внешнее лицензирование (ExternalOnly) |
+| `TestProduct.Installer` | Установка через EXE/MSI |
+| `TestProduct.PluginDll` | Одиночная DLL (PluginDll) |
 
 ---
 
@@ -711,6 +713,8 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | [`TestProduct.Freemium`](https://github.com/2805028/Grossgeo-Platform-SDK/tree/main/samples/TestProduct.Freemium) | Free-план + платные фичи |
 | [`TestProduct.Concurrent`](https://github.com/2805028/Grossgeo-Platform-SDK/tree/main/samples/TestProduct.Concurrent) | Плавающие лицензии |
 | [`TestProduct.Analytics`](https://github.com/2805028/Grossgeo-Platform-SDK/tree/main/samples/TestProduct.Analytics) | Телеметрия и аналитика |
+| [`TestProduct.Installer`](https://github.com/2805028/Grossgeo-Platform-SDK/tree/main/samples/TestProduct.Installer) | Установка через EXE/MSI |
+| [`TestProduct.PluginDll`](https://github.com/2805028/Grossgeo-Platform-SDK/tree/main/samples/TestProduct.PluginDll) | Одиночная DLL (PluginDll) |
 
 ---
 

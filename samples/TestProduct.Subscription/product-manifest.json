@@ -68,6 +68,24 @@
       "trialDays": 0,
       "trialBindingMode": null,
       "isActive": true
+    },
+    {
+      "code": "pro-yearly",
+      "name": "Pro Yearly",
+      "displayName": "Профессионал (годовая)",
+      "tier": "ProPlus",
+      "billingModel": "Subscription",
+      "billingPeriod": "Yearly",
+      "licenseMode": "User",
+      "monthlyPrice": null,
+      "yearlyPrice": 19900,
+      "oneTimePrice": null,
+      "currency": "RUB",
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null,
+      "isActive": true
     }
   ],
 
@@ -105,7 +123,8 @@
   "planFeatures": {
     "standard": ["basic", "export"],
     "standard-yearly": ["basic", "export"],
-    "pro": ["basic", "export", "advanced-export", "batch"]
+    "pro": ["basic", "export", "advanced-export", "batch"],
+    "pro-yearly": ["basic", "export", "advanced-export", "batch"]
   },
 
   "featureLimits": {

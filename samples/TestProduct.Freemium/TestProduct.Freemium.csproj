@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
@@ -13,7 +13,7 @@
     <Version>5.2.1</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Freemium</Product>
-    <Description>РўРµСЃС‚РѕРІС‹Р№ FREEMIUM РїСЂРѕРґСѓРєС‚ - Р±РµСЃРїР»Р°С‚РЅС‹Рµ Р±Р°Р·РѕРІС‹Рµ С„СѓРЅРєС†РёРё + PRO РїРѕ РїРѕРґРїРёСЃРєРµ</Description>
+    <Description>Тестовый FREEMIUM продукт - бесплатные базовые функции + PRO по подписке</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
@@ -22,7 +22,8 @@
 
   <!-- GrossGeo SDK.Stub Reference -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="1.0.0" />
+    <ProjectReference Include="..\..\src\SDK\GrossGeo.SDK.Stub\GrossGeo.SDK.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Contracts\GrossGeo.Contracts\GrossGeo.Contracts.csproj" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->

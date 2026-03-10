@@ -47,8 +47,8 @@
       "currency": "RUB",
       "maxSeats": 1,
       "maxConcurrentSessions": null,
-      "trialDays": 0,
-      "trialBindingMode": null,
+      "trialDays": 7,
+      "trialBindingMode": "Account",
       "isActive": true
     }
   ],
@@ -76,16 +76,23 @@
       "isPublic": false
     },
     {
-      "code": "batch",
+      "code": "batch-processing",
       "name": "Пакетная обработка",
       "description": "Пакетная обработка нескольких файлов",
       "isDefault": false,
       "isPublic": false
     },
     {
-      "code": "cloud",
+      "code": "cloud-sync",
       "name": "Облачная синхронизация",
       "description": "Синхронизация данных с облаком",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "priority-support",
+      "name": "Приоритетная поддержка",
+      "description": "Приоритетная поддержка для PRO пользователей",
       "isDefault": false,
       "isPublic": false
     }
@@ -93,24 +100,36 @@
 
   "planFeatures": {
     "free": ["basic-tools", "simple-export"],
-    "pro": ["basic-tools", "simple-export", "advanced-tools", "batch", "cloud"]
+    "pro": ["basic-tools", "simple-export", "advanced-tools", "batch-processing", "cloud-sync", "priority-support"]
   },
 
   "featureLimits": {
     "free.simple-export": [
       {
-        "limitCode": "maxObjects",
+        "limitCode": "maxPerCall",
         "limitType": "MaxPerCall",
         "limitValue": 5
       },
       {
-        "limitCode": "maxFileSize",
+        "limitCode": "maxSize",
         "limitType": "MaxSize",
         "limitValue": 10485760
       }
     ],
+    "free.batch-processing": [
+      {
+        "limitCode": "maxPerCall",
+        "limitType": "MaxPerCall",
+        "limitValue": 10
+      },
+      {
+        "limitCode": "maxPerSession",
+        "limitType": "MaxPerSession",
+        "limitValue": 50
+      }
+    ],
     "pro.simple-export": null,
-    "pro.batch": null
+    "pro.batch-processing": null
   },
 
   "releases": [
@@ -150,25 +169,68 @@
       "expectedPlanTier": "Free",
       "expectedBillingModel": "Free"
     },
+    "trial": {
+      "isAvailable": true,
+      "trialDays": 7,
+      "trialBindingMode": "Account"
+    },
     "featureLimits": {
       "free": {
-        "simple-export.maxObjects": 5,
-        "simple-export.maxFileSize": 10485760
+        "simple-export.maxPerCall": 5,
+        "simple-export.maxSize": 10485760,
+        "batch-processing.maxPerCall": 10,
+        "batch-processing.maxPerSession": 50
       },
       "pro": {
-        "simple-export.maxObjects": null,
-        "simple-export.maxFileSize": null
+        "simple-export.maxPerCall": null,
+        "simple-export.maxSize": null,
+        "batch-processing.maxPerCall": null
       }
     },
     "commands": [
       {
-        "name": "GGFREEMIUMTEST",
-        "expectedOutput": "Freemium plugin executed",
+        "name": "GGFMBASIC",
+        "expectedOutput": "Базовые инструменты",
         "requiresLicense": false
       },
       {
-        "name": "GGFREEMIUMEXPORT",
-        "expectedOutput": "Export completed",
+        "name": "GGFMEXPORT",
+        "expectedOutput": "Экспорт в базовом формате",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGFMADVANCED",
+        "expectedOutput": "Продвинутые инструменты",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGFMBATCH",
+        "expectedOutput": "Пакетная обработка",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGFMCLOUD",
+        "expectedOutput": "Синхронизация с облаком",
+        "requiresLicense": true
+      },
+      {
+        "name": "GGFMINFO",
+        "expectedOutput": "Freemium Product Info",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGFMUPGRADE",
+        "expectedOutput": "ОБНОВИТЕ ДО PRO",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGFMLIMITS",
+        "expectedOutput": "Feature Limits Demo",
+        "requiresLicense": false
+      },
+      {
+        "name": "GGFMREFRESH",
+        "expectedOutput": "Обновление данных",
         "requiresLicense": false
       }
     ]

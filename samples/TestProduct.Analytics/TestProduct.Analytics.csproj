@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- TODO: Р”РѕР±Р°РІРёС‚СЊ net48 РєРѕРіРґР° AutoCAD 2024 Р±СѓРґРµС‚ СѓСЃС‚Р°РЅРѕРІР»РµРЅ -->
+    <!-- TODO: Добавить net48 когда AutoCAD 2024 будет установлен -->
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
     <RootNamespace>TestProduct.Analytics</RootNamespace>
     <AssemblyName>TestProduct.Analytics</AssemblyName>
@@ -14,16 +14,17 @@
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Analytics</Product>
-    <Description>РўРµСЃС‚РѕРІС‹Р№ РїСЂРѕРґСѓРєС‚ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїР»Р°С‚С„РѕСЂРјС‹ РґРёСЃС‚СЂРёР±СѓС†РёРё GrossGeo СЃ SDK Lite (Р°РЅР°Р»РёС‚РёРєР°)</Description>
+    <Description>Тестовый продукт для проверки платформы дистрибуции GrossGeo с SDK Lite (аналитика)</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- GrossGeo SDK.Stub Reference (NuGet Package) -->
+  <!-- GrossGeo SDK.Stub Reference (Project Reference for testing) -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="1.0.0" />
+    <ProjectReference Include="..\..\src\SDK\GrossGeo.SDK.Stub\GrossGeo.SDK.Stub.csproj" />
+    <ProjectReference Include="..\..\src\Contracts\GrossGeo.Contracts\GrossGeo.Contracts.csproj" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET Framework 4.8 (AutoCAD 2019-2024) -->

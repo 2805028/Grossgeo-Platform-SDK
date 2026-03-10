@@ -60,13 +60,28 @@
     },
     "commands": [
       {
-        "name": "GGANLTTEST",
-        "expectedOutput": "Analytics plugin executed",
+        "name": "TEST_ANALYTICS_INFO",
+        "expectedOutput": "ExternalOnly",
         "requiresLicense": false
       },
       {
-        "name": "GGANLTINFO",
-        "expectedOutput": "ProductLicensingMode=ExternalOnly",
+        "name": "TEST_TRACK_FEATURE",
+        "expectedOutput": "Аналитика: событие отправлено",
+        "requiresLicense": false
+      },
+      {
+        "name": "TEST_ANALYTICS_UPDATE",
+        "expectedOutput": "Проверка обновлений",
+        "requiresLicense": false
+      },
+      {
+        "name": "TEST_SESSION_STATS",
+        "expectedOutput": "Session Stats",
+        "requiresLicense": false
+      },
+      {
+        "name": "TEST_ANALYTICS_HELP",
+        "expectedOutput": "TEST PRODUCT ANALYTICS",
         "requiresLicense": false
       }
     ]

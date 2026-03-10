@@ -40,7 +40,7 @@
       "tier": "ProPlus",
       "billingModel": "Perpetual",
       "billingPeriod": "OneTime",
-      "licenseMode": "Machine",
+      "licenseMode": "User",
       "monthlyPrice": null,
       "yearlyPrice": null,
       "oneTimePrice": 24990,
@@ -74,32 +74,39 @@
 
   "features": [
     {
-      "code": "core",
-      "name": "Ядро",
-      "description": "Основной функционал продукта",
+      "code": "export_pdf",
+      "name": "Экспорт в PDF",
+      "description": "Экспорт чертежей в PDF формат",
       "isDefault": true,
       "isPublic": false
     },
     {
-      "code": "advanced",
-      "name": "Расширенный функционал",
-      "description": "Продвинутые инструменты анализа",
+      "code": "batch_processing",
+      "name": "Пакетная обработка",
+      "description": "Пакетная обработка нескольких файлов",
       "isDefault": false,
       "isPublic": false
     },
     {
-      "code": "premium",
-      "name": "Премиум функционал",
+      "code": "premium_tools",
+      "name": "Премиум инструменты",
       "description": "Эксклюзивные инструменты для Pro+ пользователей",
+      "isDefault": false,
+      "isPublic": false
+    },
+    {
+      "code": "enterprise_api",
+      "name": "Enterprise API",
+      "description": "Программный доступ к API для автоматизации",
       "isDefault": false,
       "isPublic": false
     }
   ],
 
   "planFeatures": {
-    "pro": ["core", "advanced"],
-    "pro-plus": ["core", "advanced", "premium"],
-    "maintenance": ["core", "advanced"]
+    "pro": ["export_pdf", "batch_processing"],
+    "pro-plus": ["export_pdf", "batch_processing", "premium_tools", "enterprise_api"],
+    "maintenance": ["export_pdf", "batch_processing"]
   },
 
   "featureLimits": {},
@@ -157,13 +164,33 @@
     },
     "commands": [
       {
-        "name": "GGLICTEST",
-        "expectedOutput": "Licensed plugin executed",
+        "name": "TEST_LICENSE_INFO",
+        "expectedOutput": "PlanTier=Pro",
+        "requiresLicense": false
+      },
+      {
+        "name": "TEST_PROTECTED_CMD",
+        "expectedOutput": "Лицензия валидна",
         "requiresLicense": true
       },
       {
-        "name": "GGLICINFO",
-        "expectedOutput": "PlanTier=Pro",
+        "name": "TEST_FEATURE_CHECK",
+        "expectedOutput": "export_pdf",
+        "requiresLicense": false
+      },
+      {
+        "name": "TEST_CHECK_UPDATE",
+        "expectedOutput": "Проверка обновлений",
+        "requiresLicense": false
+      },
+      {
+        "name": "TEST_LICENSE_RECHECK",
+        "expectedOutput": "Повторная проверка",
+        "requiresLicense": false
+      },
+      {
+        "name": "TEST_LICENSED_HELP",
+        "expectedOutput": "TEST PRODUCT LICENSED",
         "requiresLicense": false
       }
     ]
