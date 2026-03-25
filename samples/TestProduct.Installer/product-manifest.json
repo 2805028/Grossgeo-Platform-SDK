@@ -21,16 +21,17 @@
       "displayName": "Профессионал",
       "tier": "Pro",
       "billingModel": "Subscription",
-      "billingPeriod": "Monthly",
       "licenseMode": "Machine",
       "monthlyPrice": 1490,
-      "yearlyPrice": null,
+      "yearlyPrice": 14900,
       "oneTimePrice": null,
       "currency": "RUB",
       "maxSeats": 1,
       "maxConcurrentSessions": null,
       "trialDays": 14,
       "trialBindingMode": "AccountAndMachine",
+      "description": "Профессиональные инструменты с установкой через EXE",
+      "highlights": ["Полный функционал", "Автоматические обновления"],
       "isActive": true
     }
   ],
@@ -40,15 +41,13 @@
       "code": "core",
       "name": "Ядро",
       "description": "Основной функционал плагина",
-      "isDefault": true,
-      "isPublic": false
+      "isDefault": true
     },
     {
       "code": "advanced",
       "name": "Расширенный функционал",
       "description": "Продвинутые возможности",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     }
   ],
 

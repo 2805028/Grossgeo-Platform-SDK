@@ -21,7 +21,6 @@
       "displayName": "Бесплатный",
       "tier": "Free",
       "billingModel": "Free",
-      "billingPeriod": null,
       "licenseMode": "Machine",
       "monthlyPrice": 0,
       "yearlyPrice": 0,
@@ -39,16 +38,17 @@
       "displayName": "Профессионал",
       "tier": "Pro",
       "billingModel": "Subscription",
-      "billingPeriod": "Monthly",
       "licenseMode": "User",
       "monthlyPrice": 800,
-      "yearlyPrice": null,
+      "yearlyPrice": 8000,
       "oneTimePrice": null,
       "currency": "RUB",
       "maxSeats": 1,
       "maxConcurrentSessions": null,
       "trialDays": 7,
       "trialBindingMode": "Account",
+      "description": "Для индивидуальных пользователей",
+      "highlights": ["Профессиональные инструменты", "Пакетный экспорт (до 100)"],
       "isActive": true
     },
     {
@@ -57,16 +57,18 @@
       "displayName": "Pro+ (Concurrent)",
       "tier": "ProPlus",
       "billingModel": "Subscription",
-      "billingPeriod": "Monthly",
       "licenseMode": "Concurrent",
       "monthlyPrice": 1500,
-      "yearlyPrice": null,
+      "yearlyPrice": 15000,
       "oneTimePrice": null,
       "currency": "RUB",
       "maxSeats": 10,
       "maxConcurrentSessions": 10,
       "trialDays": 7,
       "trialBindingMode": "Account",
+      "description": "Для команд с плавающими лицензиями",
+      "highlights": ["Всё из Pro", "10 concurrent сессий", "Enterprise API", "Cloud Sync"],
+      "isRecommended": true,
       "isActive": true
     }
   ],
@@ -76,43 +78,37 @@
       "code": "view-objects",
       "name": "Просмотр объектов",
       "description": "Базовый просмотр объектов на чертеже",
-      "isDefault": true,
-      "isPublic": true
+      "isDefault": true
     },
     {
       "code": "basic-tools",
       "name": "Базовые инструменты",
       "description": "Набор базовых инструментов",
-      "isDefault": true,
-      "isPublic": false
+      "isDefault": true
     },
     {
       "code": "pro-tools",
       "name": "Профессиональные инструменты",
       "description": "Расширенные инструменты для Pro/Pro+ пользователей",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     },
     {
       "code": "export-batch",
       "name": "Пакетный экспорт",
       "description": "Экспорт с graduated limits по планам",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     },
     {
       "code": "enterprise-api",
       "name": "Enterprise API",
       "description": "Программный доступ к API для автоматизации",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     },
     {
       "code": "cloud-sync",
       "name": "Облачная синхронизация",
       "description": "Синхронизация данных с облачным хранилищем",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     }
   ],
 

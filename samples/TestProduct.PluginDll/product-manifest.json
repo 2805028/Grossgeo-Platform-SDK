@@ -21,16 +21,18 @@
       "displayName": "Профессионал",
       "tier": "Pro",
       "billingModel": "Perpetual",
-      "billingPeriod": "OneTime",
       "licenseMode": "Machine",
       "monthlyPrice": null,
       "yearlyPrice": null,
       "oneTimePrice": 4990,
+      "maintenanceYearlyPrice": null,
       "currency": "RUB",
       "maxSeats": 1,
       "maxConcurrentSessions": null,
       "trialDays": 14,
       "trialBindingMode": "AccountAndMachine",
+      "description": "Бессрочная лицензия на плагин",
+      "highlights": ["Покупка навсегда", "Генерация отчётов"],
       "isActive": true
     }
   ],
@@ -40,15 +42,13 @@
       "code": "core",
       "name": "Ядро",
       "description": "Основной функционал плагина",
-      "isDefault": true,
-      "isPublic": false
+      "isDefault": true
     },
     {
       "code": "reporting",
       "name": "Отчётность",
       "description": "Генерация отчётов по объектам чертежа",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     }
   ],
 

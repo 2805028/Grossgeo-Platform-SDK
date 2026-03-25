@@ -7,16 +7,39 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-06-01
+
 ### Added
-- TestProduct.Installer (DistributionType.Installer)
-- TestProduct.PluginDll (DistributionType.PluginDll)
+- Usage tracking: `IncrementUsageAsync`, `GetCurrentUsageAsync` for MaxPerDay/MaxPerMonth limits
+- `HasFeatureAsync` — async feature check with license refresh
+- `RequireLimit` — limit guard with fallback callback
+- `UsageResult` model with `CurrentUsage`, `Limit`, `Remaining`
+- New limit types: `MaxPerDay`, `MaxPerMonth`
+- Plan fields: `description`, `highlights[]`, `badge`, `isRecommended`, `maintenanceYearlyPrice`
+- FAQ section in README
+- "Key Concepts" section in README for developer onboarding
+- TestProduct.Installer sample (DistributionType.Installer)
+- TestProduct.PluginDll sample (DistributionType.PluginDll)
 
 ### Changed
-- All 8 samples: manifests synced with code
-- All README.md updated
+- **BREAKING:** Licensing model v3 — one plan = one service level
+  - `monthlyPrice` + `yearlyPrice` on a single plan (period chosen at purchase, not plan creation)
+  - Maintenance modeled as `maintenanceYearlyPrice` attribute on Perpetual plans (not a separate plan)
+- **BREAKING:** Removed `PlanTier.Maintenance` (10) — use `maintenanceYearlyPrice` on Perpetual plan
+- **BREAKING:** Removed `BillingModel.Contract` (3) — Enterprise reserved
+- **BREAKING:** Removed `SubscriptionPeriod.Quarterly` — not used
+- All 8 samples: manifests updated to v3 format
+- README completely rewritten with detailed developer documentation
 
+### Removed
+- `billingPeriod` field from plan manifests (period is now on order/subscription)
+- `isPublic` field from feature manifests (unprotected code is public by design)
+- `requiresPlanCode` field from plan manifests (Maintenance is an attribute, not a plan)
+- `LoadPublicFeaturesAsync` — no longer needed (use `HasFeature` for default features)
+- Separate Maintenance plans in samples (replaced by `maintenanceYearlyPrice`)
+- Separate Monthly/Yearly plans in samples (merged into single plan with both prices)
 
-## [1.0.0] - 2026-03-02
+## [1.0.0] - 2025-03-02
 
 ### Added
 - Initial public release

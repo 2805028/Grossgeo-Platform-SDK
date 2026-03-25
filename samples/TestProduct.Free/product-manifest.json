@@ -21,7 +21,6 @@
       "displayName": "Бесплатный",
       "tier": "Free",
       "billingModel": "Free",
-      "billingPeriod": null,
       "licenseMode": "Machine",
       "monthlyPrice": 0,
       "yearlyPrice": 0,
@@ -40,15 +39,13 @@
       "code": "view-objects",
       "name": "Просмотр объектов",
       "description": "Базовый просмотр объектов на чертеже",
-      "isDefault": true,
-      "isPublic": true
+      "isDefault": true
     },
     {
       "code": "basic-info",
       "name": "Базовая информация",
       "description": "Отображение базовой информации об объектах",
-      "isDefault": true,
-      "isPublic": true
+      "isDefault": true
     }
   ],
 
