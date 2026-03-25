@@ -25,14 +25,13 @@
       "monthlyPrice": null,
       "yearlyPrice": null,
       "oneTimePrice": 4990,
-      "maintenanceYearlyPrice": null,
       "currency": "RUB",
       "maxSeats": 1,
       "maxConcurrentSessions": null,
       "trialDays": 14,
       "trialBindingMode": "AccountAndMachine",
       "description": "Бессрочная лицензия на плагин",
-      "highlights": ["Покупка навсегда", "Генерация отчётов"],
+      "highlights": ["Покупка навсегда", "Отчётность по объектам", "Trial 14 дней"],
       "isActive": true
     }
   ],

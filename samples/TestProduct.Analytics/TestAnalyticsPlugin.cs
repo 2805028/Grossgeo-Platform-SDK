@@ -35,9 +35,9 @@ namespace TestProduct.Analytics
         {
             WriteMessage("\n╔══════════════════════════════════════════════════════════════╗");
             WriteMessage("║  📊 TEST PRODUCT ANALYTICS v1.0.0                            ║");
-            WriteMessage("║  Режим ExternalOnly (v2) — внешнее лицензирование            ║");
+            WriteMessage("║  Режим ExternalOnly — внешнее лицензирование              ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  v2: ProductLicensingMode=ExternalOnly                        ║");
+            WriteMessage("║  ProductLicensingMode=ExternalOnly                              ║");
             WriteMessage("║  Каталог: GrossGeo. Лицензии: внешние (сайт разработчика)     ║");
             WriteMessage("║  SDK: аналитика использования                                 ║");
             WriteMessage("╚══════════════════════════════════════════════════════════════╝");
@@ -103,7 +103,7 @@ namespace TestProduct.Analytics
 
             var sb = new StringBuilder();
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
-            sb.AppendLine("║        TEST PRODUCT ANALYTICS — ExternalOnly (v2)            ║");
+            sb.AppendLine("║        TEST PRODUCT ANALYTICS — ExternalOnly                  ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine($"║  Product Key:      {MaskKey(ProductKey),-39} ║");
             sb.AppendLine($"║  Plugin Version:   {PluginVersion,-39} ║");
@@ -115,7 +115,7 @@ namespace TestProduct.Analytics
             sb.AppendLine($"║  Offline Mode:     {GrossGeoLicense.IsOfflineMode,-39} ║");
             sb.AppendLine($"║  Commands Used:    {_commandCounter,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
-            sb.AppendLine("║  ExternalOnly Mode (v2):                                     ║");
+            sb.AppendLine("║  ExternalOnly Mode:                                            ║");
             sb.AppendLine("║    • Каталог — через GrossGeo                                ║");
             sb.AppendLine("║    • Покупка — редирект на сайт разработчика                 ║");
             sb.AppendLine("║    • Лицензии — внешние, не через GrossGeo                   ║");
@@ -211,7 +211,7 @@ namespace TestProduct.Analytics
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
             sb.AppendLine("║       TEST PRODUCT ANALYTICS — Команды                       ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
-            sb.AppendLine("║  TEST_ANALYTICS_INFO     — Информация (ExternalOnly v2)      ║");
+            sb.AppendLine("║  TEST_ANALYTICS_INFO     — Информация (ExternalOnly)          ║");
             sb.AppendLine("║  TEST_TRACK_FEATURE      — Симуляция команды (аналитика)     ║");
             sb.AppendLine("║  TEST_ANALYTICS_UPDATE   — Проверка обновлений               ║");
             sb.AppendLine("║  TEST_SESSION_STATS      — Статистика сессии                 ║");

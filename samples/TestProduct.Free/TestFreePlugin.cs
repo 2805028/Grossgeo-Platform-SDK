@@ -1,6 +1,6 @@
 // =====================================================================
 // TestProduct.Free — Бесплатный продукт (FREE)
-// Демонстрация: PlanTier.Free, BillingModel.Free, публичные фичи
+// Демонстрация: PlanTier.Free, BillingModel.Free, Default-фичи
 // =====================================================================
 
 using System;
@@ -18,7 +18,7 @@ namespace TestProduct.Free
 {
     /// <summary>
     /// Тестовый FREE плагин — работает без лицензии.
-    /// Демонстрирует v2: PlanTier.Free, BillingModel.Free, публичные фичи (IsPublic).
+    /// Демонстрирует: PlanTier.Free, BillingModel.Free, Default-фичи (IsDefault).
     /// </summary>
     public class TestFreePlugin : IExtensionApplication
     {
@@ -36,8 +36,8 @@ namespace TestProduct.Free
             WriteMessage("║  🆓 TEST PRODUCT FREE v1.0.0                                  ║");
             WriteMessage("║  Бесплатный продукт — работает без лицензии                   ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  v2: PlanTier=Free, BillingModel=Free                         ║");
-            WriteMessage("║  Публичные фичи (IsPublic) доступны даже Guest                ║");
+            WriteMessage("║  PlanTier=Free, BillingModel=Free                             ║");
+            WriteMessage("║  Default-фичи (IsDefault) доступны во всех планах             ║");
             WriteMessage("╚══════════════════════════════════════════════════════════════╝");
 
             _ = InitializeSdkAsync();
@@ -106,18 +106,18 @@ namespace TestProduct.Free
         }
 
         /// <summary>
-        /// Полная информация о лицензии (v2 API).
+        /// Полная информация о лицензии.
         /// </summary>
         [CommandMethod("GGFREEINFO")]
         public void FreeInfoCommand()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("\n═══ FREE Product Info (v2) ═══");
+            sb.AppendLine("\n═══ FREE Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
             sb.AppendLine($"IsValid:        {GrossGeoLicense.IsValid}");
 
-            // v2 свойства
-            sb.AppendLine($"\n═══ v2 License Model ═══");
+            // Свойства лицензии
+            sb.AppendLine($"\n═══ License Model ═══");
             sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
             sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
             sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");
@@ -132,36 +132,32 @@ namespace TestProduct.Free
             sb.AppendLine($"Count: {features.Count}");
             foreach (var f in features)
             {
-                var isPublic = GrossGeoLicense.IsPublicFeature(f);
-                sb.AppendLine($"  • {f}{(isPublic ? " [PUBLIC]" : "")}");
+                sb.AppendLine($"  • {f}");
             }
 
             WriteMessage(sb.ToString());
         }
 
         /// <summary>
-        /// Демонстрация публичных фичей (IsPublic=true) — работают без авторизации.
+        /// Демонстрация фичей доступных всем (IsDefault=true) — работают без платной лицензии.
         /// </summary>
         [CommandMethod("GGFREEPUBLIC")]
         public void PublicFeaturesCommand()
         {
-            WriteMessage("\n═══ Public Features Demo (v2) ═══");
-            WriteMessage("Публичные фичи (IsPublic=true) доступны даже для Guest:");
+            WriteMessage("\n═══ Default Features Demo (v3) ═══");
+            WriteMessage("Фичи с IsDefault=true доступны во всех планах:");
 
-            // Пример публичных фичей — работают без авторизации
-            var publicFeatures = new[] { "view-objects", "basic-info" };
-            foreach (var feature in publicFeatures)
+            var defaultFeatures = new[] { "view-objects", "basic-info" };
+            foreach (var feature in defaultFeatures)
             {
                 var hasIt = GrossGeoLicense.HasFeature(feature);
-                var isPublic = GrossGeoLicense.IsPublicFeature(feature);
                 var icon = hasIt ? "✅" : "❌";
-                WriteMessage($"  {icon} {feature}: HasFeature={hasIt}, IsPublic={isPublic}");
+                WriteMessage($"  {icon} {feature}: HasFeature={hasIt}");
             }
 
-            WriteMessage("\nДля Guest (неавторизованного) пользователя:");
-            WriteMessage("  • IsPublic=true фичи возвращают HasFeature=true");
-            WriteMessage("  • IsPublic=false фичи возвращают HasFeature=false");
-            WriteMessage("  • FREE план получает все IsDefault=true фичи");
+            WriteMessage("\nv3: Код без SDK-обёртки доступен всем по определению.");
+            WriteMessage("  • IsDefault=true — доступны во всех планах (включая Free)");
+            WriteMessage("  • PlanFeature — доступны по плану");
         }
 
         /// <summary>
@@ -175,8 +171,8 @@ namespace TestProduct.Free
             sb.AppendLine("║       TEST PRODUCT FREE — Команды                            ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine("║  GGFREETEST     — Бесплатная команда                         ║");
-            sb.AppendLine("║  GGFREEINFO     — Информация о лицензии (v2 API)             ║");
-            sb.AppendLine("║  GGFREEPUBLIC   — Демо публичных фичей (IsPublic)            ║");
+            sb.AppendLine("║  GGFREEINFO     — Информация о лицензии                      ║");
+            sb.AppendLine("║  GGFREEPUBLIC   — Демо Default-фичей (IsDefault)             ║");
             sb.AppendLine("║  GGFREEHELP     — Эта справка                                ║");
             sb.AppendLine("╚══════════════════════════════════════════════════════════════╝");
             WriteMessage(sb.ToString());

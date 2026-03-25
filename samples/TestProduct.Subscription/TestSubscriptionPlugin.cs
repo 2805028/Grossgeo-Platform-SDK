@@ -18,7 +18,7 @@ namespace TestProduct.Subscription
 {
     /// <summary>
     /// Тестовый плагин с Trial и подпиской.
-    /// Демонстрирует v2: Trial, PlanTier.Pro, BillingModel.Subscription, LicenseMode.User.
+    /// Демонстрирует: Trial, PlanTier.Pro, BillingModel.Subscription, LicenseMode.User.
     /// </summary>
     public class TestSubscriptionPlugin : IExtensionApplication
     {
@@ -36,7 +36,7 @@ namespace TestProduct.Subscription
             WriteMessage("║  🔄 TEST PRODUCT SUBSCRIPTION v1.1.0                          ║");
             WriteMessage("║  Trial 14 дней → Подписка Standard/Pro                        ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  v2: PlanTier=Pro, BillingModel=Subscription, Mode=User        ║");
+            WriteMessage("║  PlanTier=Pro, BillingModel=Subscription, Mode=User             ║");
             WriteMessage("║  Trial: 14 дней                                               ║");
             WriteMessage("║  Standard: 990₽/мес (basic, export)                           ║");
             WriteMessage("║  Pro: 1990₽/мес (+ advanced-export, batch)                    ║");
@@ -115,11 +115,11 @@ namespace TestProduct.Subscription
         public void InfoCommand()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("\n═══ Subscription Product Info (v2) ═══");
+            sb.AppendLine("\n═══ Subscription Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
             sb.AppendLine($"IsValid:        {GrossGeoLicense.IsValid}");
 
-            sb.AppendLine("\n═══ v2 License Model ═══");
+            sb.AppendLine("\n═══ License Model ═══");
             sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
             sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
             sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");

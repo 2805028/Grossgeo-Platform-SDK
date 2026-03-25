@@ -18,7 +18,7 @@ namespace TestProduct.PluginDll
 {
     /// <summary>
     /// Тестовый плагин с типом дистрибуции PluginDll.
-    /// Демонстрирует v2: DistributionType.PluginDll, PlanTier.Pro,
+    /// Демонстрирует: DistributionType.PluginDll, PlanTier.Pro,
     /// BillingModel.Perpetual, LicenseMode.Machine, Trial 14 дней.
     /// </summary>
     public class TestPluginDllPlugin : IExtensionApplication
@@ -37,7 +37,7 @@ namespace TestProduct.PluginDll
             WriteMessage("║  📄 TEST PRODUCT PLUGINDLL v1.0.0                             ║");
             WriteMessage("║  Тип дистрибуции: PluginDll (одиночная DLL)                    ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  v2: DistributionType=PluginDll                                ║");
+            WriteMessage("║  DistributionType=PluginDll                                     ║");
             WriteMessage("║  Pro: Perpetual 4990₽, Trial 14 дней                           ║");
             WriteMessage("║  TrialBindingMode: AccountAndMachine                           ║");
             WriteMessage("╚══════════════════════════════════════════════════════════════╝");
@@ -93,7 +93,7 @@ namespace TestProduct.PluginDll
                     WriteMessage($"[SDK] Доступна только команда: GGDLLINFO, GGDLLHELP");
                 }
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
                 WriteMessage($"\n[SDK] ❌ Ошибка: {ex.Message}");
             }
@@ -137,11 +137,11 @@ namespace TestProduct.PluginDll
         public void DllInfoCommand()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("\n═══ PluginDll Product Info (v2) ═══");
+            sb.AppendLine("\n═══ PluginDll Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
             sb.AppendLine($"IsValid:        {GrossGeoLicense.IsValid}");
 
-            sb.AppendLine("\n═══ v2 License Model ═══");
+            sb.AppendLine("\n═══ License Model ═══");
             sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
             sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
             sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");
@@ -174,7 +174,7 @@ namespace TestProduct.PluginDll
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  📊 GGDLLREPORT — Отчёт                ║");
-                    WriteMessage("║  Feature: reporting + Limits (v2)      ║");
+                    WriteMessage("║  Feature: reporting + Limits           ║");
                     WriteMessage("╚════════════════════════════════════════╝");
 
                     // Симуляция: пользователь запросил отчёт по 200 объектам
@@ -212,7 +212,7 @@ namespace TestProduct.PluginDll
             sb.AppendLine("║       TEST PRODUCT PLUGINDLL — Команды                       ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine("║  GGDLLTEST     — Базовая команда (требует лицензию)           ║");
-            sb.AppendLine("║  GGDLLINFO     — Информация о лицензии (v2 API)               ║");
+            sb.AppendLine("║  GGDLLINFO     — Информация о лицензии                    ║");
             sb.AppendLine("║  GGDLLREPORT   — Отчёт с Feature Limits                      ║");
             sb.AppendLine("║  GGDLLHELP     — Эта справка                                 ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");

@@ -1,5 +1,5 @@
 // =====================================================================
-// TestProduct.Licensed — Perpetual лицензия + Maintenance (v2)
+// TestProduct.Licensed — Perpetual лицензия + Maintenance
 // Демонстрация: PlanTier.Pro, BillingModel.Perpetual, LicenseMode.Machine
 // =====================================================================
 
@@ -19,7 +19,7 @@ namespace TestProduct.Licensed
 {
     /// <summary>
     /// Тестовый плагин с Perpetual лицензией.
-    /// Демонстрирует v2: PlanTier.Pro, BillingModel.Perpetual, LicenseMode.Machine, Maintenance.
+    /// Демонстрирует: PlanTier.Pro, BillingModel.Perpetual, LicenseMode.Machine, Maintenance.
     /// </summary>
     public class TestLicensedPlugin : IExtensionApplication
     {
@@ -37,7 +37,7 @@ namespace TestProduct.Licensed
             WriteMessage("║  💎 TEST PRODUCT LICENSED v1.1.0                              ║");
             WriteMessage("║  Perpetual лицензия (разовая покупка)                         ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  v2: PlanTier=Pro, BillingModel=Perpetual, Mode=Machine       ║");
+            WriteMessage("║  PlanTier=Pro, BillingModel=Perpetual, Mode=Machine            ║");
             WriteMessage("║  Maintenance: подписка на обновления (аддон)                  ║");
             WriteMessage("╚══════════════════════════════════════════════════════════════╝");
 
@@ -110,14 +110,14 @@ namespace TestProduct.Licensed
         #region AutoCAD Commands
 
         /// <summary>
-        /// Полная информация о лицензии (v2 API).
+        /// Полная информация о лицензии.
         /// </summary>
         [CommandMethod("TEST_LICENSE_INFO")]
         public void ShowLicenseInfo()
         {
             var sb = new StringBuilder();
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
-            sb.AppendLine("║          TEST PRODUCT LICENSED — License Info (v2)            ║");
+            sb.AppendLine("║          TEST PRODUCT LICENSED — License Info                ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine($"║  Product Key:      {MaskKey(ProductKey),-39} ║");
             sb.AppendLine($"║  Plugin Version:   {PluginVersion,-39} ║");
@@ -126,8 +126,8 @@ namespace TestProduct.Licensed
             sb.AppendLine($"║  Valid:            {GrossGeoLicense.IsValid,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 
-            // v2 модель лицензирования
-            sb.AppendLine("║  v2 License Model:                                            ║");
+            // Модель лицензирования
+            sb.AppendLine("║  License Model:                                                ║");
             sb.AppendLine($"║    PlanTier:       {GrossGeoLicense.PlanTier,-39} ║");
             sb.AppendLine($"║    BillingModel:   {GrossGeoLicense.BillingModel,-39} ║");
             sb.AppendLine($"║    LicenseMode:    {GrossGeoLicense.LicenseMode,-39} ║");
@@ -235,7 +235,7 @@ namespace TestProduct.Licensed
                         WriteMessage($"  Изменения:       {Truncate(updateResult.Changelog, 50)}");
                     }
 
-                    // v2: Maintenance проверка
+                    // Maintenance проверка
                     WriteMessage("\n  [Maintenance Info]");
                     WriteMessage("  При BillingModel=Perpetual обновления зависят от Maintenance:");
                     WriteMessage("  • Maintenance активен → обновления разрешены");
@@ -281,7 +281,7 @@ namespace TestProduct.Licensed
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
             sb.AppendLine("║       TEST PRODUCT LICENSED — Команды                        ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
-            sb.AppendLine("║  TEST_LICENSE_INFO     — Информация о лицензии (v2)          ║");
+            sb.AppendLine("║  TEST_LICENSE_INFO     — Информация о лицензии              ║");
             sb.AppendLine("║  TEST_PROTECTED_CMD    — Защищённая команда (Protect)        ║");
             sb.AppendLine("║  TEST_FEATURE_CHECK    — Проверка feature flags              ║");
             sb.AppendLine("║  TEST_CHECK_UPDATE     — Проверка обновлений (Maintenance)   ║");
@@ -304,14 +304,14 @@ namespace TestProduct.Licensed
         {
             if (string.IsNullOrEmpty(key) || key.Length < 8)
                 return "****";
-            return key[..4] + "..." + key[^4..];
+            return key.Substring(0, 4) + "..." + key.Substring(key.Length - 4);
         }
 
         private static string Truncate(string text, int maxLength)
         {
             if (string.IsNullOrEmpty(text))
                 return text;
-            return text.Length <= maxLength ? text : text[..(maxLength - 3)] + "...";
+            return text.Length <= maxLength ? text : text.Substring(0, maxLength - 3) + "...";
         }
 
         #endregion

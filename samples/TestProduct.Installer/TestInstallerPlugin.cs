@@ -18,7 +18,7 @@ namespace TestProduct.Installer
 {
     /// <summary>
     /// Тестовый плагин с типом дистрибуции Installer.
-    /// Демонстрирует v2: DistributionType.Installer, TrialBindingMode.AccountAndMachine.
+    /// Демонстрирует: DistributionType.Installer, TrialBindingMode.AccountAndMachine.
     /// </summary>
     public class TestInstallerPlugin : IExtensionApplication
     {
@@ -36,7 +36,7 @@ namespace TestProduct.Installer
             WriteMessage("║  📦 TEST PRODUCT INSTALLER v1.0.0                             ║");
             WriteMessage("║  Тип дистрибуции: Installer (MSI/EXE)                         ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  v2: DistributionType=Installer                               ║");
+            WriteMessage("║  DistributionType=Installer                                    ║");
             WriteMessage("║  Pro: 1490₽/мес, Trial 14 дней                                ║");
             WriteMessage("║  TrialBindingMode: AccountAndMachine                          ║");
             WriteMessage("╚══════════════════════════════════════════════════════════════╝");

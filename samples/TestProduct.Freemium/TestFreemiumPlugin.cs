@@ -1,6 +1,6 @@
 // =====================================================================
 // TestProduct.Freemium — Бесплатный базовый + PRO фичи по подписке
-// Демонстрация: Freemium, Feature Limits (v2), PlanTier, BillingModel
+// Демонстрация: Freemium, Feature Limits, PlanTier, BillingModel
 // =====================================================================
 
 using System;
@@ -18,7 +18,7 @@ namespace TestProduct.Freemium
 {
     /// <summary>
     /// Тестовый FREEMIUM плагин.
-    /// Демонстрирует v2: Feature Limits (GetFeatureLimit, CheckLimit, RequireLimit).
+    /// Демонстрирует: Feature Limits (GetFeatureLimit, CheckLimit, RequireLimit).
     /// </summary>
     public class TestFreemiumPlugin : IExtensionApplication
     {
@@ -36,7 +36,7 @@ namespace TestProduct.Freemium
             WriteMessage("║  ⭐ TEST PRODUCT FREEMIUM v1.1.0                               ║");
             WriteMessage("║  Базовые функции бесплатно, PRO по подписке                   ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  v2: PlanTier=Free/Pro, BillingModel=Free/Subscription        ║");
+            WriteMessage("║  PlanTier=Free/Pro, BillingModel=Free/Subscription             ║");
             WriteMessage("║  Feature Limits: GetFeatureLimit, CheckLimit, RequireLimit     ║");
             WriteMessage("║  Free: basic-tools, simple-export                             ║");
             WriteMessage("║  PRO (490₽/мес): + advanced-tools, batch, cloud, support      ║");
@@ -129,7 +129,7 @@ namespace TestProduct.Freemium
         public void InfoCommand()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("\n═══ Freemium Product Info (v2) ═══");
+            sb.AppendLine("\n═══ Freemium Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
             sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
             sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
@@ -145,8 +145,8 @@ namespace TestProduct.Freemium
             sb.AppendLine($"cloud-sync:        {(GrossGeoLicense.HasFeature("cloud-sync") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
             sb.AppendLine($"priority-support:  {(GrossGeoLicense.HasFeature("priority-support") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
 
-            // v2: Feature Limits
-            sb.AppendLine("\n═══ Feature Limits (v2) ═══");
+            // Feature Limits
+            sb.AppendLine("\n═══ Feature Limits ═══");
             var batchLimit = GrossGeoLicense.GetFeatureLimit("batch-processing", "maxPerCall");
             var exportSizeLimit = GrossGeoLicense.GetFeatureLimit("simple-export", "maxSize");
             sb.AppendLine($"batch-processing.maxPerCall: {(batchLimit.HasValue ? batchLimit.Value.ToString() : "безлимитно")}");
@@ -270,7 +270,7 @@ namespace TestProduct.Freemium
         }
 
         /// <summary>
-        /// Пакетная обработка (PRO) с Feature Limits (v2).
+        /// Пакетная обработка (PRO) с Feature Limits.
         /// </summary>
         [CommandMethod("GGFMBATCH")]
         public void BatchCommand()
@@ -280,10 +280,10 @@ namespace TestProduct.Freemium
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  📦 GGFMBATCH — Пакетная обработка     ║");
-                    WriteMessage("║  PRO Feature + Limits (v2)             ║");
+                    WriteMessage("║  PRO Feature + Limits                  ║");
                     WriteMessage("╚════════════════════════════════════════╝");
 
-                    // v2: Проверяем лимит через SDK
+                    // Проверяем лимит через SDK
                     var objectCount = 50; // Симуляция: выбрано 50 объектов
                     var limit = GrossGeoLicense.GetFeatureLimit("batch-processing", "maxPerCall");
 
@@ -313,13 +313,13 @@ namespace TestProduct.Freemium
         }
 
         /// <summary>
-        /// Демонстрация Feature Limits API (v2).
+        /// Демонстрация Feature Limits API.
         /// </summary>
         [CommandMethod("GGFMLIMITS")]
         public void LimitsCommand()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("\n═══ Feature Limits Demo (v2 API) ═══");
+            sb.AppendLine("\n═══ Feature Limits Demo ═══");
 
             // Получение лимитов через GetFeatureLimit
             var limitCodes = new[]

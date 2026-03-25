@@ -30,8 +30,8 @@
       "maxConcurrentSessions": null,
       "trialDays": 14,
       "trialBindingMode": "AccountAndMachine",
-      "description": "Профессиональные инструменты с установкой через EXE",
-      "highlights": ["Полный функционал", "Автоматические обновления"],
+      "description": "Профессиональный плагин с установщиком",
+      "highlights": ["Полный функционал", "Установка через EXE", "Trial 14 дней"],
       "isActive": true
     }
   ],

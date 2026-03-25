@@ -1,7 +1,7 @@
 // =====================================================================
-// TestProduct.Concurrent — Multi-tier + Concurrent Sessions (v2)
+// TestProduct.Concurrent — Multi-tier + Concurrent Sessions
 // Демонстрация: Free/Pro/Pro+, LicenseMode.Concurrent, Heartbeat,
-//               Feature Limits, Public Features (IsPublic)
+//               Feature Limits, Default Features (IsDefault)
 // =====================================================================
 
 using System;
@@ -19,8 +19,8 @@ namespace TestProduct.Concurrent
 {
     /// <summary>
     /// Тестовый плагин с Multi-tier планами и Concurrent лицензированием.
-    /// Демонстрирует v2: Free/Pro/Pro+, LicenseMode.Concurrent, heartbeat,
-    /// Feature Limits, публичные фичи (IsPublic), AcquireSession/ReleaseSession.
+    /// Демонстрирует: Free/Pro/Pro+, LicenseMode.Concurrent, heartbeat,
+    /// Feature Limits, Default-фичи (IsDefault), AcquireSession/ReleaseSession.
     /// </summary>
     public class TestConcurrentPlugin : IExtensionApplication
     {
@@ -36,9 +36,9 @@ namespace TestProduct.Concurrent
         {
             WriteMessage("\n╔══════════════════════════════════════════════════════════════╗");
             WriteMessage("║  🔁 TEST PRODUCT CONCURRENT v1.0.0                            ║");
-            WriteMessage("║  Multi-tier + Concurrent Sessions (v2)                        ║");
+            WriteMessage("║  Multi-tier + Concurrent Sessions                              ║");
             WriteMessage("╠══════════════════════════════════════════════════════════════╣");
-            WriteMessage("║  Free: basic-tools, view-objects (IsPublic)                   ║");
+            WriteMessage("║  Free: basic-tools, view-objects (IsDefault)                   ║");
             WriteMessage("║  Pro (800₽/мес): + pro-tools, export-batch (LicenseMode=User) ║");
             WriteMessage("║  Pro+ (1500₽/мес): + enterprise-api, cloud (Concurrent)       ║");
             WriteMessage("╚══════════════════════════════════════════════════════════════╝");
@@ -138,11 +138,11 @@ namespace TestProduct.Concurrent
         {
             var sb = new StringBuilder();
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
-            sb.AppendLine("║          CONCURRENT TOOLKIT — Info (v2)                       ║");
+            sb.AppendLine("║          CONCURRENT TOOLKIT — Info                            ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 
-            // v2 модель
-            sb.AppendLine("║  v2 License Model:                                            ║");
+            // Модель лицензирования
+            sb.AppendLine("║  License Model:                                                ║");
             sb.AppendLine($"║    PlanTier:       {GrossGeoLicense.PlanTier,-39} ║");
             sb.AppendLine($"║    BillingModel:   {GrossGeoLicense.BillingModel,-39} ║");
             sb.AppendLine($"║    LicenseMode:    {GrossGeoLicense.LicenseMode,-39} ║");
@@ -162,8 +162,7 @@ namespace TestProduct.Concurrent
             foreach (var f in featuresToCheck)
             {
                 var has = GrossGeoLicense.HasFeature(f);
-                var isPublic = GrossGeoLicense.IsPublicFeature(f);
-                var suffix = isPublic ? " [PUBLIC]" : has ? "" : " [🔒]";
+                var suffix = has ? "" : " [🔒]";
                 var icon = has ? "✅" : "❌";
                 sb.AppendLine($"║    {icon} {f,-20}{suffix,-32} ║");
             }
@@ -188,7 +187,7 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCSESSION")]
         public async void SessionCommand()
         {
-            WriteMessage("\n═══ Concurrent Session Management (v2) ═══");
+            WriteMessage("\n═══ Concurrent Session Management ═══");
             WriteMessage($"Текущий LicenseMode: {GrossGeoLicense.LicenseMode}");
             WriteMessage($"HasActiveSession:    {GrossGeoLicense.HasActiveSession}");
 
@@ -252,20 +251,20 @@ namespace TestProduct.Concurrent
         #region Commands — Public Features
 
         /// <summary>
-        /// Демо публичных фичей (IsPublic=true) — работают для Guest без авторизации.
+        /// Демо Default-фичей (IsDefault=true) — доступны во всех планах.
         /// </summary>
         [CommandMethod("GGCONCPUBLIC")]
         public void PublicFeaturesCommand()
         {
-            WriteMessage("\n═══ Public Features Demo (v2 IsPublic) ═══");
-            WriteMessage("Публичные фичи доступны даже без авторизации (Guest):\n");
+            WriteMessage("\n═══ Default Features Demo (IsDefault) ═══");
+            WriteMessage("Default-фичи доступны во всех планах (включая Free):\n");
 
-            // view-objects — IsPublic=true в DbSeeder
+            // view-objects — IsDefault=true
             FeatureGuard.Require("view-objects",
                 action: () =>
                 {
-                    WriteMessage("  ✅ [view-objects] Просмотр объектов — PUBLIC фича");
-                    WriteMessage("     Работает для всех: Guest, Free, Pro, Pro+");
+                    WriteMessage("  ✅ [view-objects] Просмотр объектов — DEFAULT фича");
+                    WriteMessage("     Работает для всех планов: Free, Pro, Pro+");
                 },
                 onMissing: () =>
                 {
@@ -297,11 +296,6 @@ namespace TestProduct.Concurrent
                     WriteMessage("  🔒 [enterprise-api] Недоступна — требуется Pro+ план");
                 }
             );
-
-            WriteMessage("\n═══ IsPublicFeature Check ═══");
-            WriteMessage($"  view-objects:   IsPublic={GrossGeoLicense.IsPublicFeature("view-objects")}");
-            WriteMessage($"  basic-tools:    IsPublic={GrossGeoLicense.IsPublicFeature("basic-tools")}");
-            WriteMessage($"  enterprise-api: IsPublic={GrossGeoLicense.IsPublicFeature("enterprise-api")}");
         }
 
         #endregion
@@ -342,7 +336,7 @@ namespace TestProduct.Concurrent
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  📦 GGCONCBATCH — Пакетный экспорт     ║");
-                    WriteMessage("║  Feature Limits v2                     ║");
+                    WriteMessage("║  Feature Limits                        ║");
                     WriteMessage("╚════════════════════════════════════════╝");
 
                     // Симуляция: пользователь выбрал 75 объектов
@@ -352,7 +346,7 @@ namespace TestProduct.Concurrent
                     WriteMessage($"Объектов выбрано: {objectCount}");
                     WriteMessage($"Лимит maxPerCall: {(limit.HasValue ? limit.Value.ToString() : "∞ (безлимит)")}");
 
-                    // v2: RequireLimitOrThrow — жёсткая проверка
+                    // RequireLimitOrThrow — жёсткая проверка
                     try
                     {
                         GrossGeoLicense.RequireLimitOrThrow("export-batch", "maxPerCall", objectCount);
@@ -379,13 +373,13 @@ namespace TestProduct.Concurrent
         #region Commands — Limits & Help
 
         /// <summary>
-        /// Демонстрация Feature Limits API (v2).
+        /// Демонстрация Feature Limits API.
         /// </summary>
         [CommandMethod("GGCONCLIMITS")]
         public void LimitsCommand()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("\n═══ Feature Limits Overview (v2) ═══");
+            sb.AppendLine("\n═══ Feature Limits Overview ═══");
             sb.AppendLine($"PlanTier: {GrossGeoLicense.PlanTier}");
 
             sb.AppendLine("\n[GetFeatureLimit]");
@@ -433,18 +427,18 @@ namespace TestProduct.Concurrent
         {
             var sb = new StringBuilder();
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
-            sb.AppendLine("║       CONCURRENT TOOLKIT — Команды (v2)                      ║");
+            sb.AppendLine("║       CONCURRENT TOOLKIT — Команды                          ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine("║  Информация:                                                 ║");
             sb.AppendLine("║    GGCONCINFO          — Лицензия, сессия, features, limits   ║");
             sb.AppendLine("║    GGCONCHELP          — Эта справка                         ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
-            sb.AppendLine("║  Concurrent Sessions (v2):                                    ║");
+            sb.AppendLine("║  Concurrent Sessions:                                          ║");
             sb.AppendLine("║    GGCONCSESSION       — Получить / heartbeat сессию          ║");
             sb.AppendLine("║    GGCONCSESSIONRELEASE— Освободить сессию                   ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine("║  Features:                                                    ║");
-            sb.AppendLine("║    GGCONCPUBLIC        — Публичные фичи (IsPublic)           ║");
+            sb.AppendLine("║    GGCONCPUBLIC        — Default-фичи (IsDefault)            ║");
             sb.AppendLine("║    GGCONCPRO           — Pro инструменты (Pro+)              ║");
             sb.AppendLine("║    GGCONCBATCH         — Пакетный экспорт + Limits           ║");
             sb.AppendLine("║    GGCONCLIMITS        — Обзор Feature Limits                ║");
