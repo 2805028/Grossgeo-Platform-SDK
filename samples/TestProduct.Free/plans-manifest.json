@@ -1,0 +1,39 @@
+{
+  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
+  "manifestVersion": 1,
+
+  "plans": [
+    {
+      "code": "free",
+      "name": "Free",
+      "displayName": "Бесплатный",
+      "planTier": "Free",
+      "billingModel": "Free",
+      "licenseMode": "Machine",
+      "monthlyPrice": 0,
+      "yearlyPrice": 0,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null
+    }
+  ],
+
+  "features": [
+    {
+      "code": "view-objects",
+      "name": "Просмотр объектов",
+      "description": "Базовый просмотр объектов на чертеже",
+      "isDefault": true,
+      "planCodes": ["free"]
+    },
+    {
+      "code": "basic-info",
+      "name": "Базовая информация",
+      "description": "Отображение базовой информации об объектах",
+      "isDefault": true,
+      "planCodes": ["free"]
+    }
+  ]
+}

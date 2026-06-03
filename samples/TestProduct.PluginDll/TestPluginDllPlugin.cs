@@ -29,6 +29,8 @@ namespace TestProduct.PluginDll
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        private static ProductLicenseAccessor? _license;
+
         #region IExtensionApplication
 
         public void Initialize()
@@ -47,7 +49,7 @@ namespace TestProduct.PluginDll
 
         public void Terminate()
         {
-            GrossGeoLicense.Shutdown();
+            GrossGeoLicense.Shutdown(ProductKey);
         }
 
         #endregion
@@ -68,6 +70,8 @@ namespace TestProduct.PluginDll
                     GracePeriodDays = 7,
                     CheckForUpdatesOnInit = true
                 });
+
+                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"\n[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -115,8 +119,8 @@ namespace TestProduct.PluginDll
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  ✅ GGDLLTEST — PluginDll команда       ║");
                     WriteMessage("╚════════════════════════════════════════╝");
-                    WriteMessage($"PlanTier: {GrossGeoLicense.PlanTier}");
-                    WriteMessage($"BillingModel: {GrossGeoLicense.BillingModel}");
+                    WriteMessage($"PlanTier: {_license?.PlanTier}");
+                    WriteMessage($"BillingModel: {_license?.BillingModel}");
                     WriteMessage($"DistributionType: PluginDll");
                     WriteMessage("Команда выполнена успешно!");
                 },
@@ -139,24 +143,24 @@ namespace TestProduct.PluginDll
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ PluginDll Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
-            sb.AppendLine($"IsValid:        {GrossGeoLicense.IsValid}");
+            sb.AppendLine($"IsValid:        {_license?.IsValid}");
 
             sb.AppendLine("\n═══ License Model ═══");
-            sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
-            sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
-            sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");
+            sb.AppendLine($"PlanTier:       {_license?.PlanTier}");
+            sb.AppendLine($"BillingModel:   {_license?.BillingModel}");
+            sb.AppendLine($"LicenseMode:    {_license?.LicenseMode}");
             sb.AppendLine($"DistributionType: PluginDll");
 
             sb.AppendLine("\n═══ Status ═══");
-            sb.AppendLine($"ExpiresAt:      {GrossGeoLicense.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
-            sb.AppendLine($"IsOfflineMode:  {GrossGeoLicense.IsOfflineMode}");
-            sb.AppendLine($"IsGracePeriod:  {GrossGeoLicense.IsInGracePeriod}");
+            sb.AppendLine($"ExpiresAt:      {_license?.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
+            sb.AppendLine($"IsOfflineMode:  {_license?.IsOfflineMode}");
+            sb.AppendLine($"IsGracePeriod:  {_license?.IsInGracePeriod}");
 
             sb.AppendLine("\n═══ Features ═══");
-            sb.AppendLine($"core:      {GrossGeoLicense.HasFeature("core")}");
-            sb.AppendLine($"reporting: {GrossGeoLicense.HasFeature("reporting")}");
+            sb.AppendLine($"core:      {_license?.HasFeature("core")}");
+            sb.AppendLine($"reporting: {_license?.HasFeature("reporting")}");
 
-            var reportingLimit = GrossGeoLicense.GetFeatureLimit("reporting", "maxPerCall");
+            var reportingLimit = _license?.GetFeatureLimit("reporting", "maxPerCall");
             sb.AppendLine($"\n═══ Limits ═══");
             sb.AppendLine($"reporting.maxPerCall: {(reportingLimit.HasValue ? reportingLimit.Value.ToString() : "N/A")}");
 
@@ -169,7 +173,7 @@ namespace TestProduct.PluginDll
         [CommandMethod("GGDLLREPORT")]
         public void DllReportCommand()
         {
-            FeatureGuard.Require("reporting",
+            _license?.RequireFeature("reporting",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -179,12 +183,12 @@ namespace TestProduct.PluginDll
 
                     // Симуляция: пользователь запросил отчёт по 200 объектам
                     var objectCount = 200;
-                    var limit = GrossGeoLicense.GetFeatureLimit("reporting", "maxPerCall");
+                    var limit = _license?.GetFeatureLimit("reporting", "maxPerCall");
 
                     WriteMessage($"Объектов в отчёте: {objectCount}");
                     WriteMessage($"Лимит maxPerCall:  {(limit.HasValue ? limit.Value.ToString() : "∞ (безлимит)")}");
 
-                    if (GrossGeoLicense.CheckLimit("reporting", "maxPerCall", objectCount))
+                    if (_license?.CheckLimit("reporting", "maxPerCall", objectCount) == true)
                     {
                         WriteMessage($"✅ Лимит не превышен — отчёт сформирован!");
                     }

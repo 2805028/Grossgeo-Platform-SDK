@@ -28,6 +28,8 @@ namespace TestProduct.Freemium
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        private static ProductLicenseAccessor? _license;
+
         #region IExtensionApplication
 
         public void Initialize()
@@ -47,7 +49,7 @@ namespace TestProduct.Freemium
 
         public void Terminate()
         {
-            GrossGeoLicense.Shutdown();
+            GrossGeoLicense.Shutdown(ProductKey);
             WriteMessage("\n[TestProduct.Freemium] Плагин выгружен");
         }
 
@@ -68,6 +70,8 @@ namespace TestProduct.Freemium
                     PluginVersion = PluginVersion,
                     GracePeriodDays = 7
                 });
+
+                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"\n[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -106,7 +110,8 @@ namespace TestProduct.Freemium
             try
             {
                 WriteMessage("\n[SDK] Обновление данных лицензии...");
-                var result = await GrossGeoLicense.RefreshAsync();
+                var lic = _license ?? GrossGeoLicense.ForProduct(ProductKey);
+                var result = await lic.RefreshAsync();
                 
                 WriteMessage($"[SDK] Статус: {result.Status}");
                 WriteMessage($"[SDK] План: {result.PlanTier}");
@@ -131,28 +136,28 @@ namespace TestProduct.Freemium
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ Freemium Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
-            sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
-            sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
-            sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");
+            sb.AppendLine($"PlanTier:       {_license?.PlanTier}");
+            sb.AppendLine($"BillingModel:   {_license?.BillingModel}");
+            sb.AppendLine($"LicenseMode:    {_license?.LicenseMode}");
 
             sb.AppendLine("\n═══ Free Tier Features ═══");
-            sb.AppendLine($"basic-tools:    {(GrossGeoLicense.HasFeature("basic-tools") ? "✅" : "❌")}");
-            sb.AppendLine($"simple-export:  {(GrossGeoLicense.HasFeature("simple-export") ? "✅" : "❌")}");
+            sb.AppendLine($"basic-tools:    {(_license?.HasFeature("basic-tools") == true ? "✅" : "❌")}");
+            sb.AppendLine($"simple-export:  {(_license?.HasFeature("simple-export") == true ? "✅" : "❌")}");
 
             sb.AppendLine("\n═══ PRO Features ═══");
-            sb.AppendLine($"advanced-tools:    {(GrossGeoLicense.HasFeature("advanced-tools") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
-            sb.AppendLine($"batch-processing:  {(GrossGeoLicense.HasFeature("batch-processing") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
-            sb.AppendLine($"cloud-sync:        {(GrossGeoLicense.HasFeature("cloud-sync") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
-            sb.AppendLine($"priority-support:  {(GrossGeoLicense.HasFeature("priority-support") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"advanced-tools:    {(_license?.HasFeature("advanced-tools") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"batch-processing:  {(_license?.HasFeature("batch-processing") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"cloud-sync:        {(_license?.HasFeature("cloud-sync") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"priority-support:  {(_license?.HasFeature("priority-support") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
 
             // Feature Limits
             sb.AppendLine("\n═══ Feature Limits ═══");
-            var batchLimit = GrossGeoLicense.GetFeatureLimit("batch-processing", "maxPerCall");
-            var exportSizeLimit = GrossGeoLicense.GetFeatureLimit("simple-export", "maxSize");
+            var batchLimit = _license?.GetFeatureLimit("batch-processing", "maxPerCall");
+            var exportSizeLimit = _license?.GetFeatureLimit("simple-export", "maxSize");
             sb.AppendLine($"batch-processing.maxPerCall: {(batchLimit.HasValue ? batchLimit.Value.ToString() : "безлимитно")}");
             sb.AppendLine($"simple-export.maxSize:       {(exportSizeLimit.HasValue ? $"{exportSizeLimit.Value} bytes" : "безлимитно")}");
 
-            var isPro = GrossGeoLicense.HasFeature("advanced-tools");
+            var isPro = _license?.HasFeature("advanced-tools") == true;
             sb.AppendLine($"\n💡 Статус: {(isPro ? "PRO пользователь" : "Free Tier")}");
 
             WriteMessage(sb.ToString());
@@ -165,7 +170,7 @@ namespace TestProduct.Freemium
         public void BasicToolsCommand()
         {
             // Проверяем default feature (всегда доступна для FREEMIUM)
-            FeatureGuard.Require("basic-tools",
+            _license?.RequireFeature("basic-tools",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -189,7 +194,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMEXPORT")]
         public void SimpleExportCommand()
         {
-            FeatureGuard.Require("simple-export",
+            _license?.RequireFeature("simple-export",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -199,7 +204,7 @@ namespace TestProduct.Freemium
                     WriteMessage("Экспорт в базовом формате выполнен!");
 
                     // Upsell
-                    if (!GrossGeoLicense.HasFeature("advanced-tools"))
+                    if (_license?.HasFeature("advanced-tools") != true)
                     {
                         WriteMessage("\n💡 Совет: Обновитесь до PRO для расширенных форматов!");
                         WriteMessage("   Используйте команду GGFMUPGRADE");
@@ -218,7 +223,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMUPGRADE")]
         public void UpgradeCommand()
         {
-            if (GrossGeoLicense.HasFeature("advanced-tools"))
+            if (_license?.HasFeature("advanced-tools") == true)
             {
                 WriteMessage("\n✅ Вы уже PRO пользователь!");
                 WriteMessage("Все функции доступны.");
@@ -251,7 +256,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMADVANCED")]
         public void AdvancedToolsCommand()
         {
-            FeatureGuard.Require("advanced-tools",
+            _license?.RequireFeature("advanced-tools",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -275,7 +280,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMBATCH")]
         public void BatchCommand()
         {
-            FeatureGuard.Require("batch-processing",
+            _license?.RequireFeature("batch-processing",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -285,13 +290,13 @@ namespace TestProduct.Freemium
 
                     // Проверяем лимит через SDK
                     var objectCount = 50; // Симуляция: выбрано 50 объектов
-                    var limit = GrossGeoLicense.GetFeatureLimit("batch-processing", "maxPerCall");
+                    var limit = _license?.GetFeatureLimit("batch-processing", "maxPerCall");
 
                     WriteMessage($"Выбрано объектов: {objectCount}");
                     WriteMessage($"Лимит maxPerCall: {(limit.HasValue ? limit.Value.ToString() : "безлимитно")}");
 
                     // Проверка через RequireLimit
-                    GrossGeoLicense.RequireLimit(
+                    _license?.RequireLimit(
                         "batch-processing", "maxPerCall", objectCount,
                         action: () =>
                         {
@@ -332,19 +337,19 @@ namespace TestProduct.Freemium
 
             foreach (var (feature, limit) in limitCodes)
             {
-                var value = GrossGeoLicense.GetFeatureLimit(feature, limit);
+                var value = _license?.GetFeatureLimit(feature, limit);
                 sb.AppendLine($"  {feature}.{limit}: {(value.HasValue ? value.Value.ToString() : "null (безлимитно)")}");
             }
 
             // Проверка CheckLimit
             sb.AppendLine("\n═══ CheckLimit Examples ═══");
-            var check1 = GrossGeoLicense.CheckLimit("batch-processing", "maxPerCall", 5);
-            var check2 = GrossGeoLicense.CheckLimit("batch-processing", "maxPerCall", 500);
-            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 5):   {(check1 ? "✅ OK" : "❌ Exceeded")}");
-            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 500): {(check2 ? "✅ OK" : "❌ Exceeded")}");
+            var check1 = _license?.CheckLimit("batch-processing", "maxPerCall", 5);
+            var check2 = _license?.CheckLimit("batch-processing", "maxPerCall", 500);
+            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 5):   {(check1 == true ? "✅ OK" : "❌ Exceeded")}");
+            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 500): {(check2 == true ? "✅ OK" : "❌ Exceeded")}");
 
             // FeatureLimits словарь
-            var allLimits = GrossGeoLicense.FeatureLimits;
+            var allLimits = _license?.FeatureLimits;
             if (allLimits != null && allLimits.Count > 0)
             {
                 sb.AppendLine("\n═══ All FeatureLimits (raw) ═══");
@@ -367,7 +372,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMCLOUD")]
         public void CloudSyncCommand()
         {
-            FeatureGuard.Require("cloud-sync",
+            _license?.RequireFeature("cloud-sync",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");

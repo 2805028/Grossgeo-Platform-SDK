@@ -14,7 +14,7 @@
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Analytics</Product>
-    <Description>Тестовый продукт для проверки платформы дистрибуции GrossGeo с SDK Lite (аналитика)</Description>
+    <Description>Тестовый продукт для проверки платформы дистрибуции GrossGeo с SDK (аналитика)</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>

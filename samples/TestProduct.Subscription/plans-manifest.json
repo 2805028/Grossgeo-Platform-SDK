@@ -1,0 +1,75 @@
+{
+  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
+  "manifestVersion": 1,
+
+  "plans": [
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Стандартный",
+      "description": "Стандартный набор инструментов",
+      "highlights": ["Экспорт данных", "Базовая обработка"],
+      "planTier": "Pro",
+      "billingModel": "Subscription",
+      "licenseMode": "User",
+      "monthlyPrice": 990,
+      "yearlyPrice": 9900,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 14,
+      "trialBindingMode": "Account"
+    },
+    {
+      "code": "pro-plus",
+      "name": "Pro Plus",
+      "displayName": "Профессионал",
+      "description": "Расширенный набор с пакетной обработкой",
+      "highlights": ["Всё из Pro", "Расширенный экспорт", "Пакетная обработка"],
+      "planTier": "ProPlus",
+      "billingModel": "Subscription",
+      "licenseMode": "User",
+      "monthlyPrice": 1990,
+      "yearlyPrice": 19900,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null
+    }
+  ],
+
+  "features": [
+    {
+      "code": "basic",
+      "name": "Базовый функционал",
+      "description": "Основные инструменты продукта",
+      "isDefault": true,
+      "planCodes": ["pro", "pro-plus"]
+    },
+    {
+      "code": "export",
+      "name": "Экспорт",
+      "description": "Экспорт данных в различные форматы",
+      "isDefault": false,
+      "planCodes": ["pro", "pro-plus"],
+      "limits": {
+        "pro": { "maxPerCall": null, "maxPerDay": null, "maxPerMonth": 100, "maxTotal": null }
+      }
+    },
+    {
+      "code": "advanced-export",
+      "name": "Расширенный экспорт",
+      "description": "Пакетный экспорт, шаблоны, автоматизация",
+      "isDefault": false,
+      "planCodes": ["pro-plus"]
+    },
+    {
+      "code": "batch",
+      "name": "Пакетная обработка",
+      "description": "Пакетная обработка нескольких файлов",
+      "isDefault": false,
+      "planCodes": ["pro-plus"]
+    }
+  ]
+}

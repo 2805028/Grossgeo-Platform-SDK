@@ -7,3 +7,8 @@ obj/
 *.nupkg
 Thumbs.db
 .DS_Store
+
+# Fixture release bundles must never be committed to the public repo
+# (they would ship compiled — and historically un-obfuscated — SDK binaries).
+samples/**/fixtures/
+samples/fixtures-checksums.sha256

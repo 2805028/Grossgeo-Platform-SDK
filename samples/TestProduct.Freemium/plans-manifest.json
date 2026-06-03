@@ -1,0 +1,89 @@
+{
+  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
+  "manifestVersion": 1,
+
+  "plans": [
+    {
+      "code": "free",
+      "name": "Free",
+      "displayName": "Бесплатный",
+      "description": "Базовые инструменты бесплатно",
+      "highlights": ["Базовые инструменты", "Простой экспорт (до 5 объектов)"],
+      "planTier": "Free",
+      "billingModel": "Free",
+      "licenseMode": "Machine",
+      "monthlyPrice": 0,
+      "yearlyPrice": 0,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null
+    },
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "description": "Полный набор инструментов для профессионалов",
+      "highlights": ["Безлимитный экспорт", "Расширенные инструменты", "Пакетная обработка"],
+      "planTier": "Pro",
+      "billingModel": "Subscription",
+      "licenseMode": "Machine",
+      "monthlyPrice": 490,
+      "yearlyPrice": 4900,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 7,
+      "trialBindingMode": "Account"
+    }
+  ],
+
+  "features": [
+    {
+      "code": "basic-tools",
+      "name": "Базовые инструменты",
+      "description": "Набор базовых инструментов работы",
+      "isDefault": true,
+      "planCodes": ["free", "pro"]
+    },
+    {
+      "code": "simple-export",
+      "name": "Простой экспорт",
+      "description": "Экспорт данных с ограничениями на Free плане",
+      "isDefault": true,
+      "planCodes": ["free", "pro"],
+      "limits": {
+        "free": { "maxPerCall": 5, "maxPerDay": null, "maxPerMonth": null, "maxTotal": null }
+      }
+    },
+    {
+      "code": "advanced-tools",
+      "name": "Расширенные инструменты",
+      "description": "Продвинутые инструменты для Pro пользователей",
+      "isDefault": false,
+      "planCodes": ["pro"]
+    },
+    {
+      "code": "batch-processing",
+      "name": "Пакетная обработка",
+      "description": "Пакетная обработка нескольких файлов",
+      "isDefault": false,
+      "planCodes": ["pro"]
+    },
+    {
+      "code": "cloud-sync",
+      "name": "Облачная синхронизация",
+      "description": "Синхронизация данных с облаком",
+      "isDefault": false,
+      "planCodes": ["pro"]
+    },
+    {
+      "code": "priority-support",
+      "name": "Приоритетная поддержка",
+      "description": "Приоритетная поддержка для PRO пользователей",
+      "isDefault": false,
+      "planCodes": ["pro"]
+    }
+  ]
+}

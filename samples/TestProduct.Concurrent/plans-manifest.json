@@ -1,0 +1,105 @@
+{
+  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
+  "manifestVersion": 1,
+
+  "plans": [
+    {
+      "code": "free",
+      "name": "Free",
+      "displayName": "Бесплатный",
+      "planTier": "Free",
+      "billingModel": "Free",
+      "licenseMode": "Machine",
+      "monthlyPrice": 0,
+      "yearlyPrice": 0,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null
+    },
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "description": "Для индивидуальных пользователей",
+      "highlights": ["Профессиональные инструменты", "Пакетный экспорт (до 100)"],
+      "planTier": "Pro",
+      "billingModel": "Subscription",
+      "licenseMode": "User",
+      "monthlyPrice": 800,
+      "yearlyPrice": 8000,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 7,
+      "trialBindingMode": "Account"
+    },
+    {
+      "code": "pro-plus",
+      "name": "Pro Plus",
+      "displayName": "Pro+ (Concurrent)",
+      "description": "Для команд с плавающими лицензиями",
+      "highlights": ["Всё из Pro", "10 concurrent сессий", "Enterprise API", "Cloud Sync"],
+      "planTier": "ProPlus",
+      "billingModel": "Subscription",
+      "licenseMode": "Concurrent",
+      "monthlyPrice": 1500,
+      "yearlyPrice": 15000,
+      "oneTimePrice": null,
+      "maxSeats": 10,
+      "maxConcurrentSessions": 10,
+      "trialDays": 7,
+      "trialBindingMode": "Account"
+    }
+  ],
+
+  "features": [
+    {
+      "code": "view-objects",
+      "name": "Просмотр объектов",
+      "description": "Базовый просмотр объектов на чертеже",
+      "isDefault": true,
+      "planCodes": ["free", "pro", "pro-plus"]
+    },
+    {
+      "code": "basic-tools",
+      "name": "Базовые инструменты",
+      "description": "Набор базовых инструментов",
+      "isDefault": true,
+      "planCodes": ["free", "pro", "pro-plus"]
+    },
+    {
+      "code": "pro-tools",
+      "name": "Профессиональные инструменты",
+      "description": "Расширенные инструменты для Pro/Pro+ пользователей",
+      "isDefault": false,
+      "planCodes": ["pro", "pro-plus"]
+    },
+    {
+      "code": "export-batch",
+      "name": "Пакетный экспорт",
+      "description": "Экспорт с graduated limits по планам",
+      "isDefault": false,
+      "planCodes": ["free", "pro", "pro-plus"],
+      "limits": {
+        "free": { "maxPerCall": 10, "maxPerDay": null, "maxPerMonth": null, "maxTotal": null },
+        "pro": { "maxPerCall": 100, "maxPerDay": null, "maxPerMonth": null, "maxTotal": null }
+      }
+    },
+    {
+      "code": "enterprise-api",
+      "name": "Enterprise API",
+      "description": "Программный доступ к API для автоматизации",
+      "isDefault": false,
+      "planCodes": ["pro-plus"]
+    },
+    {
+      "code": "cloud-sync",
+      "name": "Облачная синхронизация",
+      "description": "Синхронизация данных с облачным хранилищем",
+      "isDefault": false,
+      "planCodes": ["pro-plus"]
+    }
+  ]
+}

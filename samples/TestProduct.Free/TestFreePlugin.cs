@@ -28,6 +28,8 @@ namespace TestProduct.Free
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        private static ProductLicenseAccessor? _license;
+
         #region IExtensionApplication
 
         public void Initialize()
@@ -45,7 +47,7 @@ namespace TestProduct.Free
 
         public void Terminate()
         {
-            GrossGeoLicense.Shutdown();
+            GrossGeoLicense.Shutdown(ProductKey);
         }
 
         #endregion
@@ -65,6 +67,8 @@ namespace TestProduct.Free
                     PluginVersion = PluginVersion,
                     GracePeriodDays = 7
                 });
+
+                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -114,20 +118,20 @@ namespace TestProduct.Free
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ FREE Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
-            sb.AppendLine($"IsValid:        {GrossGeoLicense.IsValid}");
+            sb.AppendLine($"IsValid:        {_license?.IsValid}");
 
             // Свойства лицензии
             sb.AppendLine($"\n═══ License Model ═══");
-            sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
-            sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
-            sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");
+            sb.AppendLine($"PlanTier:       {_license?.PlanTier}");
+            sb.AppendLine($"BillingModel:   {_license?.BillingModel}");
+            sb.AppendLine($"LicenseMode:    {_license?.LicenseMode}");
 
             sb.AppendLine($"\n═══ Status ═══");
-            sb.AppendLine($"ExpiresAt:      {GrossGeoLicense.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
-            sb.AppendLine($"IsOfflineMode:  {GrossGeoLicense.IsOfflineMode}");
-            sb.AppendLine($"IsGracePeriod:  {GrossGeoLicense.IsInGracePeriod}");
+            sb.AppendLine($"ExpiresAt:      {_license?.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
+            sb.AppendLine($"IsOfflineMode:  {_license?.IsOfflineMode}");
+            sb.AppendLine($"IsGracePeriod:  {_license?.IsInGracePeriod}");
 
-            var features = GrossGeoLicense.Features;
+            var features = _license?.Features ?? Array.Empty<string>();
             sb.AppendLine($"\n═══ Features ═══");
             sb.AppendLine($"Count: {features.Count}");
             foreach (var f in features)
@@ -150,8 +154,8 @@ namespace TestProduct.Free
             var defaultFeatures = new[] { "view-objects", "basic-info" };
             foreach (var feature in defaultFeatures)
             {
-                var hasIt = GrossGeoLicense.HasFeature(feature);
-                var icon = hasIt ? "✅" : "❌";
+                var hasIt = _license?.HasFeature(feature);
+                var icon = hasIt == true ? "✅" : "❌";
                 WriteMessage($"  {icon} {feature}: HasFeature={hasIt}");
             }
 

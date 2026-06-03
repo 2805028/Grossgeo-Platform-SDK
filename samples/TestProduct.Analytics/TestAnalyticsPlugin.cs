@@ -29,6 +29,8 @@ namespace TestProduct.Analytics
         private static int _commandCounter;
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        private static ProductLicenseAccessor? _license;
+
         #region IExtensionApplication
 
         public void Initialize()
@@ -47,7 +49,7 @@ namespace TestProduct.Analytics
 
         public void Terminate()
         {
-            GrossGeoLicense.Shutdown();
+            GrossGeoLicense.Shutdown(ProductKey);
         }
 
         #endregion
@@ -69,6 +71,8 @@ namespace TestProduct.Analytics
                     CheckForUpdatesOnInit = true,
                     IpcTimeoutSeconds = 10
                 });
+
+                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -109,10 +113,10 @@ namespace TestProduct.Analytics
             sb.AppendLine($"║  Plugin Version:   {PluginVersion,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine($"║  Initialized:      {GrossGeoLicense.IsInitialized,-39} ║");
-            sb.AppendLine($"║  Valid:            {GrossGeoLicense.IsValid,-39} ║");
-            sb.AppendLine($"║  PlanTier:         {GrossGeoLicense.PlanTier,-39} ║");
-            sb.AppendLine($"║  BillingModel:     {GrossGeoLicense.BillingModel,-39} ║");
-            sb.AppendLine($"║  Offline Mode:     {GrossGeoLicense.IsOfflineMode,-39} ║");
+            sb.AppendLine($"║  Valid:            {_license?.IsValid,-39} ║");
+            sb.AppendLine($"║  PlanTier:         {_license?.PlanTier,-39} ║");
+            sb.AppendLine($"║  BillingModel:     {_license?.BillingModel,-39} ║");
+            sb.AppendLine($"║  Offline Mode:     {_license?.IsOfflineMode,-39} ║");
             sb.AppendLine($"║  Commands Used:    {_commandCounter,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine("║  ExternalOnly Mode:                                            ║");
@@ -189,8 +193,8 @@ namespace TestProduct.Analytics
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine($"║  Команд выполнено:     {_commandCounter,-35} ║");
             sb.AppendLine($"║  SDK Initialized:      {GrossGeoLicense.IsInitialized,-35} ║");
-            sb.AppendLine($"║  PlanTier:             {GrossGeoLicense.PlanTier,-35} ║");
-            sb.AppendLine($"║  BillingModel:         {GrossGeoLicense.BillingModel,-35} ║");
+            sb.AppendLine($"║  PlanTier:             {_license?.PlanTier,-35} ║");
+            sb.AppendLine($"║  BillingModel:         {_license?.BillingModel,-35} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine("║  SDK общается с User Panel через Named Pipe IPC             ║");
             sb.AppendLine("║  Если User Panel не запущен — используется локальный кэш    ║");

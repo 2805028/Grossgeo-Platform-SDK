@@ -16,4 +16,4 @@ This SDK is provided under the GrossGeo SDK End User License Agreement (EULA).
 
 ## Contact
 
-For questions about licensing, contact: support@grossgeo.com
+For questions about licensing, contact: support@grossgeotech.ru

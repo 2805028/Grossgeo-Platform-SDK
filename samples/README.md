@@ -2,6 +2,9 @@
 
 Тестовые AutoCAD плагины для демонстрации различных моделей лицензирования GrossGeo Platform.
 
+> **SDK v2.1.0:** Все примеры используют паттерн `ProductLicenseAccessor` для корректной работы
+> нескольких плагинов в одном процессе AutoCAD. См. [Multi-plugin](../README.md#multi-plugin-несколько-плагинов-в-одном-процессе).
+
 ## 📦 Продукты
 
 | Проект | Тип | API Key | Описание |
@@ -14,23 +17,13 @@
 
 ## 🚀 Быстрый старт
 
-### 1. Запустите инфраструктуру
+### 1. Получите ProductKey в Developer Portal
 
-```bash
-# Docker стенд (PostgreSQL + MinIO)
-docker-compose up -d
+1. Войдите в **Developer Portal** под учётной записью разработчика.
+2. Создайте продукт (или откройте существующий) и скопируйте его **ProductKey**.
+3. Подставьте ключ в константу `ProductKey` соответствующего примера.
 
-# Проверка
-curl http://localhost:5000/api/health
-```
-
-### 2. Создайте тестовые данные
-
-```bash
-curl -X POST http://localhost:5000/api/seed-test-products
-```
-
-### 3. Соберите плагины
+### 2. Соберите плагины
 
 ```bash
 # Все сразу (PowerShell)
@@ -43,6 +36,13 @@ dotnet build Samples\TestProduct.Freemium -c Release
 dotnet build Samples\TestProduct.Licensed -c Release
 dotnet build Samples\TestProduct.Analytics -c Release
 ```
+
+### 3. Установите через User Panel
+
+1. Откройте **User Panel** и войдите в свою учётную запись.
+2. Найдите продукт в каталоге и установите его.
+3. Лицензия и обновления доставляются плагину через User Panel (Named Pipe IPC) —
+   отдельная настройка не требуется.
 
 ### 4. Загрузите в AutoCAD
 
@@ -135,19 +135,13 @@ Samples/
 
 - [GrossGeo SDK Stub](../src/SDK/GrossGeo.SDK.Stub/README.md)
 - [Manual Testing Guide](../docs/testing/manual-testing-guide.md)
-- [API Documentation](http://localhost:5000/swagger)
-    └── bin/Release/
-        ├── TestProduct.Analytics.bundle_net48.zip
-        └── TestProduct.Analytics.bundle_net8.0-windows.zip
-```
 
 ## 🚀 Тестирование
 
 ### 1. Создайте продукты в Developer Portal
 
-1. Запустите CoreAPI и Developer Portal
-2. Войдите как разработчик
-3. Создайте два продукта:
+1. Войдите в Developer Portal под учётной записью разработчика.
+2. Создайте два продукта:
    - **Test Product Licensed** (Distribution: Licensed)
    - **Test Product Analytics** (Distribution: Analytics/Free)
 
@@ -177,7 +171,7 @@ TEST_LICENSE_RECHECK   — повторная проверка
 TEST_LICENSED_HELP     — справка
 
 # TestProduct.Analytics — команды:
-TEST_ANALYTICS_INFO    — информация о SDK Lite
+TEST_ANALYTICS_INFO    — информация о SDK
 TEST_TRACK_FEATURE     — трекинг с параметрами
 TEST_CUSTOM_EVENT      — кастомные события
 TEST_ANALYTICS_UPDATE  — проверка обновлений
@@ -185,6 +179,29 @@ TEST_OPEN_PRODUCT_PAGE — открыть страницу продукта
 TEST_SESSION_STATS     — статистика сессии
 TEST_ANALYTICS_HELP    — справка
 ```
+
+## 🔌 Multi-plugin паттерн (v2.1.0)
+
+Все примеры используют `ProductLicenseAccessor` для изоляции лицензий между плагинами:
+
+```csharp
+private static ProductLicenseAccessor? _license;
+
+// В Initialize:
+var result = await GrossGeoLicense.Initialize(new LicenseOptions { ProductKey = ProductKey, ... });
+_license = GrossGeoLicense.ForProduct(ProductKey);
+
+// В командах:
+_license?.Protect(() => DoWork(), () => ShowUpgrade());
+_license?.RequireFeature("export", () => DoExport());
+
+// В Terminate:
+GrossGeoLicense.Shutdown(ProductKey);
+```
+
+**Почему?** Когда несколько плагинов работают в одном AutoCAD, статические свойства
+`GrossGeoLicense.IsValid` и т.д. возвращают данные последнего инициализированного продукта.
+`ProductLicenseAccessor` решает эту проблему.
 
 ## ⚠️ Важно
 
@@ -223,7 +240,7 @@ TEST_ANALYTICS_HELP    — справка
 - [ ] Offline mode
 - [ ] Проверка обновлений
 
-### GrossGeo.SDK.Lite (Analytics)
+### GrossGeo.SDK.Stub (Analytics)
 - [ ] Инициализация
 - [ ] TrackLaunch (автоматический)
 - [ ] TrackFeatureUsage

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
+  "manifestVersion": 1,
+
+  "plans": [
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "description": "Бессрочная лицензия с базовым функционалом",
+      "highlights": ["Покупка навсегда", "Обновления с Maintenance"],
+      "planTier": "Pro",
+      "billingModel": "Perpetual",
+      "licenseMode": "Machine",
+      "monthlyPrice": null,
+      "yearlyPrice": null,
+      "oneTimePrice": 9990,
+      "maintenanceYearlyPrice": 2990,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null
+    },
+    {
+      "code": "pro-plus",
+      "name": "Pro Plus",
+      "displayName": "Pro+",
+      "description": "Расширенная бессрочная лицензия",
+      "highlights": ["Всё из Pro", "Премиум инструменты", "Enterprise API"],
+      "planTier": "ProPlus",
+      "billingModel": "Perpetual",
+      "licenseMode": "User",
+      "monthlyPrice": null,
+      "yearlyPrice": null,
+      "oneTimePrice": 24990,
+      "maintenanceYearlyPrice": 4990,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 0,
+      "trialBindingMode": null
+    }
+  ],
+
+  "features": [
+    {
+      "code": "export_pdf",
+      "name": "Экспорт в PDF",
+      "description": "Экспорт чертежей в PDF формат",
+      "isDefault": true,
+      "planCodes": ["pro", "pro-plus"]
+    },
+    {
+      "code": "batch_processing",
+      "name": "Пакетная обработка",
+      "description": "Пакетная обработка нескольких файлов",
+      "isDefault": false,
+      "planCodes": ["pro", "pro-plus"]
+    },
+    {
+      "code": "premium_tools",
+      "name": "Премиум инструменты",
+      "description": "Эксклюзивные инструменты для Pro+ пользователей",
+      "isDefault": false,
+      "planCodes": ["pro-plus"]
+    },
+    {
+      "code": "enterprise_api",
+      "name": "Enterprise API",
+      "description": "Программный доступ к API для автоматизации",
+      "isDefault": false,
+      "planCodes": ["pro-plus"]
+    }
+  ]
+}

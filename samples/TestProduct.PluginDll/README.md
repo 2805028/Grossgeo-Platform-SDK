@@ -57,7 +57,8 @@
 TestProduct.PluginDll/
 ├── TestProduct.PluginDll.csproj
 ├── TestPluginDllPlugin.cs
-├── product-manifest.json
+├── plans-manifest.json
+├── release-manifest.json
 └── README.md
 ```
 

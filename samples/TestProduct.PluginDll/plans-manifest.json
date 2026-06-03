@@ -1,0 +1,44 @@
+{
+  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
+  "manifestVersion": 1,
+
+  "plans": [
+    {
+      "code": "pro",
+      "name": "Pro",
+      "displayName": "Профессионал",
+      "description": "Бессрочная лицензия на плагин",
+      "highlights": ["Покупка навсегда", "Отчётность по объектам", "Trial 14 дней"],
+      "planTier": "Pro",
+      "billingModel": "Perpetual",
+      "licenseMode": "Machine",
+      "monthlyPrice": null,
+      "yearlyPrice": null,
+      "oneTimePrice": 4990,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
+      "trialDays": 14,
+      "trialBindingMode": "AccountAndMachine"
+    }
+  ],
+
+  "features": [
+    {
+      "code": "core",
+      "name": "Ядро",
+      "description": "Основной функционал плагина",
+      "isDefault": true,
+      "planCodes": ["pro"]
+    },
+    {
+      "code": "reporting",
+      "name": "Отчётность",
+      "description": "Генерация отчётов по объектам чертежа",
+      "isDefault": false,
+      "planCodes": ["pro"],
+      "limits": {
+        "pro": { "maxPerCall": 500, "maxPerDay": null, "maxPerMonth": null, "maxTotal": null }
+      }
+    }
+  ]
+}

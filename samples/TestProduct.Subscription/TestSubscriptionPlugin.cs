@@ -28,6 +28,8 @@ namespace TestProduct.Subscription
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        private static ProductLicenseAccessor? _license;
+
         #region IExtensionApplication
 
         public void Initialize()
@@ -47,7 +49,7 @@ namespace TestProduct.Subscription
 
         public void Terminate()
         {
-            GrossGeoLicense.Shutdown();
+            GrossGeoLicense.Shutdown(ProductKey);
             WriteMessage("\n[TestProduct.Subscription] Плагин выгружен");
         }
 
@@ -69,6 +71,8 @@ namespace TestProduct.Subscription
                     GracePeriodDays = 7,
                     CheckForUpdatesOnInit = true
                 });
+
+                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"\n[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -117,26 +121,26 @@ namespace TestProduct.Subscription
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ Subscription Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
-            sb.AppendLine($"IsValid:        {GrossGeoLicense.IsValid}");
+            sb.AppendLine($"IsValid:        {_license?.IsValid}");
 
             sb.AppendLine("\n═══ License Model ═══");
-            sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
-            sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
-            sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");
+            sb.AppendLine($"PlanTier:       {_license?.PlanTier}");
+            sb.AppendLine($"BillingModel:   {_license?.BillingModel}");
+            sb.AppendLine($"LicenseMode:    {_license?.LicenseMode}");
 
             sb.AppendLine("\n═══ Subscription Status ═══");
-            sb.AppendLine($"ExpiresAt:      {GrossGeoLicense.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A"}");
-            sb.AppendLine($"DaysRemaining:  {GrossGeoLicense.DaysRemaining?.ToString() ?? "N/A"}");
-            sb.AppendLine($"GracePeriod:    {GrossGeoLicense.IsInGracePeriod}");
-            sb.AppendLine($"OfflineMode:    {GrossGeoLicense.IsOfflineMode}");
+            sb.AppendLine($"ExpiresAt:      {_license?.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A"}");
+            sb.AppendLine($"DaysRemaining:  {_license?.DaysRemaining?.ToString() ?? "N/A"}");
+            sb.AppendLine($"GracePeriod:    {_license?.IsInGracePeriod}");
+            sb.AppendLine($"OfflineMode:    {_license?.IsOfflineMode}");
 
             sb.AppendLine("\n═══ Features ═══");
-            sb.AppendLine($"basic:           {GrossGeoLicense.HasFeature("basic")}");
-            sb.AppendLine($"export:          {GrossGeoLicense.HasFeature("export")}");
-            sb.AppendLine($"advanced-export: {GrossGeoLicense.HasFeature("advanced-export")}");
-            sb.AppendLine($"batch:           {GrossGeoLicense.HasFeature("batch")}");
+            sb.AppendLine($"basic:           {_license?.HasFeature("basic")}");
+            sb.AppendLine($"export:          {_license?.HasFeature("export")}");
+            sb.AppendLine($"advanced-export: {_license?.HasFeature("advanced-export")}");
+            sb.AppendLine($"batch:           {_license?.HasFeature("batch")}");
 
-            var features = GrossGeoLicense.Features;
+            var features = _license?.Features ?? Array.Empty<string>();
             sb.AppendLine($"\nВсе Features: [{string.Join(", ", features)}]");
 
             WriteMessage(sb.ToString());
@@ -159,7 +163,7 @@ namespace TestProduct.Subscription
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  ✅ GGSUBSTEST - Лицензия активна      ║");
                     WriteMessage("╚════════════════════════════════════════╝");
-                    WriteMessage($"Уровень плана: {GrossGeoLicense.PlanTier}");
+                    WriteMessage($"Уровень плана: {_license?.PlanTier}");
                     WriteMessage("Базовая команда выполнена успешно!");
                 },
                 onBlocked: () =>
@@ -181,25 +185,25 @@ namespace TestProduct.Subscription
             WriteMessage("\n═══ Features Demo ═══");
             
             // Проверка basic
-            FeatureGuard.Require("basic",
+            _license?.RequireFeature("basic",
                 action: () => WriteMessage("✅ [basic] Базовые функции доступны"),
                 onMissing: () => WriteMessage("❌ [basic] Недоступно")
             );
 
             // Проверка export
-            FeatureGuard.Require("export",
+            _license?.RequireFeature("export",
                 action: () => WriteMessage("✅ [export] Экспорт доступен"),
                 onMissing: () => WriteMessage("❌ [export] Недоступно")
             );
 
             // Проверка advanced-export (только Pro)
-            FeatureGuard.Require("advanced-export",
+            _license?.RequireFeature("advanced-export",
                 action: () => WriteMessage("✅ [advanced-export] Расширенный экспорт доступен (PRO)"),
                 onMissing: () => WriteMessage("❌ [advanced-export] Требуется PRO подписка")
             );
 
             // Проверка batch (только Pro)
-            FeatureGuard.Require("batch",
+            _license?.RequireFeature("batch",
                 action: () => WriteMessage("✅ [batch] Пакетная обработка доступна (PRO)"),
                 onMissing: () => WriteMessage("❌ [batch] Требуется PRO подписка")
             );
@@ -211,7 +215,7 @@ namespace TestProduct.Subscription
         [CommandMethod("GGSUBSEXPORT")]
         public void ExportCommand()
         {
-            FeatureGuard.Require("export",
+            _license?.RequireFeature("export",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -220,7 +224,7 @@ namespace TestProduct.Subscription
                     WriteMessage("Экспорт выполнен успешно!");
                     
                     // Проверяем advanced-export
-                    if (FeatureGuard.Has("advanced-export"))
+                    if (_license?.HasFeature("advanced-export") == true)
                     {
                         WriteMessage("🌟 PRO: Расширенные опции экспорта доступны");
                     }
@@ -246,7 +250,7 @@ namespace TestProduct.Subscription
             // Жёсткая защита - выбросит исключение
             try
             {
-                FeatureGuard.OrThrow("batch", () =>
+                _license?.RequireFeatureOrThrow("batch", () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  📦 GGSUBSBATCH - Пакетная обработка   ║");

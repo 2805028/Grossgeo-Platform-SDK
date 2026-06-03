@@ -1,0 +1,15 @@
+{
+  "$schema": "https://grossgeo.example/schemas/release-manifest.v1.json",
+  "manifestVersion": 1,
+  "version": "1.0.0",
+  "channel": "Stable",
+  "distributionType": "Bundle",
+  "changelog": "Первый релиз. Режим ExternalOnly — каталог и аналитика через GrossGeo, лицензирование на стороне разработчика.",
+  "postInstallAction": "RequireRestart",
+  "netloadDllPath": "Contents/TestProduct.Analytics.dll",
+  "minAutoCADVersion": "R24.4",
+  "maxAutoCADVersion": "R25.0",
+  "targetPlatforms": ["AutoCAD", "Civil3D"],
+  "supportedOS": ["Win64"],
+  "loadOnStartup": true
+}

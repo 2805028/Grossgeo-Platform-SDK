@@ -23,7 +23,8 @@
 - [Проверка обновлений](#проверка-обновлений)
 - [LicenseOptions](#licenseoptions)
 - [API Reference](#api-reference)
-- [product-manifest.json](#product-manifestjson)
+- [Манифесты продукта](#манифесты-продукта)
+- [Multi-plugin (несколько плагинов)](#multi-plugin-несколько-плагинов-в-одном-процессе)
 - [Примеры плагинов](#примеры-плагинов)
 - [FAQ](#faq)
 - [Поддержка](#поддержка)
@@ -46,7 +47,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.*" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.0" />
 ```
 
 Все необходимые типы (`PlanTier`, `BillingModel`, `LicenseMode`, `LicenseCheckStatus`) включены в пакет.
@@ -71,15 +72,21 @@ using GrossGeo.Contracts.Licensing;
 
 public class MyPlugin : IExtensionApplication
 {
+    private const string ProductKey = "GG-XXXX-XXXX-XXXX-XXXX";
+    private static ProductLicenseAccessor? _license;
+
     public void Initialize()
     {
         Task.Run(async () =>
         {
             var result = await GrossGeoLicense.Initialize(new LicenseOptions
             {
-                ProductKey = "GG-XXXX-XXXX-XXXX-XXXX",
+                ProductKey = ProductKey,
                 PluginVersion = "1.0.0"
             });
+
+            // Получаем accessor, привязанный к конкретному продукту
+            _license = GrossGeoLicense.ForProduct(ProductKey);
 
             if (result.IsValid)
             {
@@ -93,7 +100,7 @@ public class MyPlugin : IExtensionApplication
 
     public void Terminate()
     {
-        GrossGeoLicense.Shutdown();
+        GrossGeoLicense.Shutdown(ProductKey);
     }
 }
 ```
@@ -104,7 +111,7 @@ public class MyPlugin : IExtensionApplication
 [CommandMethod("MYCOMMAND")]
 public void MyCommand()
 {
-    GrossGeoLicense.Protect(
+    _license?.Protect(
         action: () => DoWork(),
         onBlocked: () => ShowMessage("Требуется лицензия")
     );
@@ -129,7 +136,7 @@ public void MyCommand()
 | **Enterprise** | Зарезервирован | Индивидуальные условия |
 
 Иерархия: `Free < Pro < ProPlus < Enterprise`.
-Все фичи нижнего плана **должны** быть явно включены в верхний (через `planFeatures`).
+Все фичи нижнего плана **должны** быть явно включены в верхний (через `planCodes` фичи).
 
 ### Модели оплаты (BillingModel)
 
@@ -170,7 +177,7 @@ Maintenance истекает          → фиксируется текущая 
 **Feature** — функция плагина, которую вы защищаете через SDK.
 
 - `IsDefault = true` — фича доступна **во всех планах** (включая Free) для авторизованных пользователей
-- `IsDefault = false` — фича доступна только в планах, где она явно добавлена через `planFeatures`
+- `IsDefault = false` — фича доступна только в планах, перечисленных в её `planCodes`
 - Код **не обёрнутый** в `HasFeature` / `FeatureGuard` — доступен всем, включая пользователей без лицензии
 
 **Limit** — количественное ограничение фичи, отличающееся по планам.
@@ -231,7 +238,7 @@ if (GrossGeoLicense.BillingModel == BillingModel.Perpetual)
 ## Feature Guards
 
 Фичи позволяют гибко управлять функционалом плагина через Developer Portal.
-Вы определяете фичи в `product-manifest.json`, а в коде — проверяете их наличие.
+Вы определяете фичи в `plans-manifest.json`, а в коде — проверяете их наличие.
 
 ```csharp
 // Проверка наличия фичи
@@ -268,7 +275,7 @@ PlanFeature(Pro+)       ❌          ❌      ❌     ✅       ❌
 ## Feature Limits
 
 Ограничивайте количественные параметры по планам.
-Лимиты задаются в `product-manifest.json` в секции `featureLimits`.
+Лимиты задаются в `plans-manifest.json` — в `limits` каждой фичи (ключ — код плана).
 
 ```csharp
 // Получить значение лимита (null = безлимитно)
@@ -293,23 +300,25 @@ GrossGeoLicense.RequireLimitOrThrow("batch-export", "maxPerCall", objects.Count)
 
 ### Graduated Limits (разные лимиты по планам)
 
-В `product-manifest.json` задайте разные лимиты для разных планов:
+В `plans-manifest.json` задайте лимиты внутри фичи — ключ объекта `limits` это код плана:
 
 ```json
 {
-  "featureLimits": {
-    "free.export": [
-      { "limitCode": "maxPerCall", "limitType": "MaxPerCall", "limitValue": 10 }
-    ],
-    "pro.export": [
-      { "limitCode": "maxPerCall", "limitType": "MaxPerCall", "limitValue": 100 }
-    ],
-    "pro-plus.export": null
-  }
+  "features": [
+    {
+      "code": "export",
+      "name": "Экспорт",
+      "planCodes": ["free", "pro", "pro-plus"],
+      "limits": {
+        "free": { "maxPerCall": 10 },
+        "pro": { "maxPerCall": 100 }
+      }
+    }
+  ]
 }
 ```
 
-`null` означает безлимитно. SDK автоматически возвращает лимит текущего плана пользователя.
+Отсутствие плана в `limits` означает безлимитно (здесь — `pro-plus`). SDK автоматически возвращает лимит текущего плана пользователя.
 
 ---
 
@@ -524,6 +533,8 @@ new LicenseOptions
 | `Initialize(string productKey)` | Упрощённая инициализация |
 | `InitializeSync(LicenseOptions)` | Синхронная инициализация |
 | `Shutdown()` | Завершение работы |
+| `Shutdown(string productKey)` | Завершение работы конкретного продукта |
+| `ForProduct(string productKey)` | Получить `ProductLicenseAccessor` для продукта |
 | `Check()` | Быстрая проверка (из памяти) |
 | `CheckAsync(CancellationToken)` | Полная проверка (запрос к User Panel) |
 | `RefreshAsync(CancellationToken)` | Принудительное обновление |
@@ -582,294 +593,167 @@ FeatureGuard.OrThrow("export", () => DoExport());
 
 ---
 
-## product-manifest.json
+## Манифесты продукта
 
-Манифест описывает ваш продукт, планы, фичи, лимиты и релизы.
-Создаётся в корне проекта и используется для регистрации продукта на платформе.
+Продукт описывается **двумя** манифестами рядом с проектом — отдельно «что продаём» и отдельно «что выкладываем»:
 
-### Минимальный пример
+| Файл | Назначение | Где используется на платформе |
+|------|------------|-------------------------------|
+| `plans-manifest.json` | Планы, фичи и лимиты продукта | `POST /api/developer/products/{id}/import-manifest/v2` (bulk-импорт) |
+| `release-manifest.json` | Метаданные **одного** релиза (версия, канал, дистрибутив) | читается сервером при загрузке файлов релиза |
 
-```json
-{
-  "$schema": "./product-manifest.schema.json",
+> ⚠️ **`productKey` в манифестах запрещён.** Единственный источник истины по ключу продукта — `LicenseOptions.ProductKey` в вашей DLL (см. раздел Multi-plugin ниже). Поля `productKey` ни в одном манифесте быть не должно.
+>
+> Метаданные продукта (имя, описание, теги, режим лицензирования `GrossGeo`/`ExternalOnly`, внешние ссылки) задаются в **Developer Portal** при создании продукта — в манифестах их больше нет.
 
-  "product": {
-    "name": "My AutoCAD Plugin",
-    "slug": "my-autocad-plugin",
-    "shortDescription": "Краткое описание плагина",
-    "fullDescription": "Полное описание плагина для страницы в каталоге",
-    "licensingMode": "GrossGeo",
-    "trialDays": 0,
-    "tags": ["autocad", "tools"]
-  },
+JSON-схемы (на платформе): `docs/schemas/plans-manifest.v1.json`, `docs/schemas/release-manifest.v1.json`. Готовые примеры — у каждого продукта в [`samples/`](https://github.com/2805028/Grossgeo-Platform-SDK/tree/main/samples) лежат собственные `plans-manifest.json` + `release-manifest.json`.
 
-  "plans": [
-    {
-      "code": "free",
-      "name": "Free",
-      "displayName": "Бесплатный",
-      "tier": "Free",
-      "billingModel": "Free",
-      "licenseMode": "Machine",
-      "monthlyPrice": 0,
-      "yearlyPrice": 0,
-      "oneTimePrice": null,
-      "currency": "RUB",
-      "maxSeats": 1,
-      "maxConcurrentSessions": null,
-      "trialDays": 0,
-      "trialBindingMode": null,
-      "isActive": true
-    }
-  ],
-
-  "features": [
-    {
-      "code": "basic",
-      "name": "Базовый функционал",
-      "description": "Основные инструменты",
-      "isDefault": true
-    }
-  ],
-
-  "planFeatures": {
-    "free": ["basic"]
-  },
-
-  "featureLimits": {},
-
-  "releases": [
-    {
-      "version": "1.0.0",
-      "channel": "Stable",
-      "changelog": "Первый релиз",
-      "distributionType": "Bundle",
-      "postInstallAction": "RequireRestart",
-      "netloadDllPath": "Contents/MyPlugin.dll",
-      "minAutoCADVersion": "R24.4",
-      "maxAutoCADVersion": "R25.0",
-      "targetPlatforms": ["AutoCAD", "Civil3D"],
-      "supportedOS": ["Win64"],
-      "loadOnStartup": true,
-      "fixtureFile": "fixtures/MyPlugin.v1.0.0.bundle.zip"
-    }
-  ]
-}
-```
-
-### Структура манифеста
-
-#### `product` — метаданные продукта
-
-| Поле | Тип | Обязательно | Описание |
-|------|-----|:-----------:|----------|
-| `name` | `string` | ✅ | Название продукта |
-| `slug` | `string` | ✅ | URL-идентификатор (латиница, дефисы) |
-| `shortDescription` | `string` | ✅ | Краткое описание (1-2 предложения) |
-| `fullDescription` | `string` | ✅ | Полное описание для каталога |
-| `licensingMode` | `string` | ✅ | `GrossGeo` или `ExternalOnly` |
-| `trialDays` | `int` | ✅ | Trial-период по умолчанию (0 = без trial) |
-| `tags` | `string[]` | — | Теги для поиска в каталоге |
-| `externalPurchaseUrl` | `string?` | — | URL покупки (для ExternalOnly) |
-| `externalDownloadUrl` | `string?` | — | URL скачивания (для ExternalOnly) |
-| `externalLicenseInstructions` | `string?` | — | Инструкция активации (для ExternalOnly) |
-
-#### `plans[]` — тарифные планы
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `code` | `string` | Уникальный код плана (латиница, дефисы) |
-| `name` | `string` | Системное имя |
-| `displayName` | `string` | Отображаемое имя в UI |
-| `tier` | `string` | Уровень: `Free`, `Pro`, `ProPlus` |
-| `billingModel` | `string` | Модель: `Free`, `Subscription`, `Perpetual` |
-| `licenseMode` | `string` | Режим: `User`, `Machine`, `Concurrent` |
-| `monthlyPrice` | `decimal?` | Цена за месяц (для Subscription) |
-| `yearlyPrice` | `decimal?` | Цена за год (для Subscription) |
-| `oneTimePrice` | `decimal?` | Разовая цена (для Perpetual) |
-| `maintenanceYearlyPrice` | `decimal?` | Maintenance за год (для Perpetual, null = недоступно) |
-| `currency` | `string` | Валюта (`RUB`) |
-| `maxSeats` | `int` | Количество рабочих мест |
-| `maxConcurrentSessions` | `int?` | Макс. concurrent сессий |
-| `trialDays` | `int` | Trial для этого плана (0 = без trial) |
-| `trialBindingMode` | `string?` | `Account` или `AccountAndMachine` |
-| `description` | `string?` | Описание плана для UI (рекомендуется для платных) |
-| `highlights` | `string[]?` | Маркетинговые буллеты для pricing table |
-| `badge` | `string?` | Бейдж ("Популярный", "Лучшая цена") |
-| `isRecommended` | `bool?` | Подсветить как рекомендуемый |
-| `isActive` | `bool` | Активен ли план |
-
-#### `features[]` — фичи продукта
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `code` | `string` | Уникальный код фичи (используется в SDK) |
-| `name` | `string` | Название |
-| `description` | `string` | Описание |
-| `isDefault` | `bool` | Включена во все планы по умолчанию |
-
-#### `planFeatures` — привязка фичей к планам
+### `plans-manifest.json`
 
 ```json
 {
-  "planFeatures": {
-    "free": ["basic-tools"],
-    "pro": ["basic-tools", "export", "batch"],
-    "pro-plus": ["basic-tools", "export", "batch", "cloud-sync", "api"]
-  }
-}
-```
-
-> **Важно:** фичи **не наследуются** автоматически. Все фичи нижних планов нужно явно включить в верхние.
-
-#### `featureLimits` — ограничения фичей по планам
-
-Ключ: `{planCode}.{featureCode}`, значение: массив лимитов или `null` (безлимитно).
-
-```json
-{
-  "featureLimits": {
-    "free.export": [
-      { "limitCode": "maxPerCall", "limitType": "MaxPerCall", "limitValue": 10 },
-      { "limitCode": "maxPerDay", "limitType": "MaxPerDay", "limitValue": 50 }
-    ],
-    "pro.export": [
-      { "limitCode": "maxPerCall", "limitType": "MaxPerCall", "limitValue": 100 }
-    ],
-    "pro-plus.export": null
-  }
-}
-```
-
-#### `releases[]` — релизы продукта
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `version` | `string` | Версия (SemVer) |
-| `channel` | `string` | Канал: `Stable`, `Beta`, `Alpha` |
-| `changelog` | `string` | Описание изменений |
-| `distributionType` | `string` | `Bundle` (Autoloader), `Installer` (EXE), `PluginDll` (одна DLL) |
-| `postInstallAction` | `string` | `RequireRestart` или `None` |
-| `netloadDllPath` | `string?` | Путь к DLL внутри bundle |
-| `minAutoCADVersion` | `string` | Мин. серия AutoCAD |
-| `maxAutoCADVersion` | `string` | Макс. серия AutoCAD |
-| `targetPlatforms` | `string[]` | `AutoCAD`, `Civil3D`, `Map` |
-| `supportedOS` | `string[]` | `Win64` |
-| `loadOnStartup` | `bool` | Загружать при старте AutoCAD |
-| `fixtureFile` | `string` | Путь к архиву релиза |
-
-### Примеры сценариев
-
-#### Подписка с trial (Monthly + Yearly на одном плане)
-
-```json
-{
+  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
+  "manifestVersion": 1,
   "plans": [
     {
       "code": "pro",
-      "tier": "Pro",
+      "name": "Pro",
+      "displayName": "Стандартный",
+      "description": "Стандартный набор инструментов",
+      "highlights": ["Экспорт данных", "Базовая обработка"],
+      "planTier": "Pro",
       "billingModel": "Subscription",
       "licenseMode": "User",
       "monthlyPrice": 990,
       "yearlyPrice": 9900,
+      "oneTimePrice": null,
+      "maxSeats": 1,
+      "maxConcurrentSessions": null,
       "trialDays": 14,
-      "trialBindingMode": "Account",
-      "description": "Полный набор инструментов",
-      "highlights": ["Экспорт данных", "Приоритетная поддержка"]
-    }
-  ]
-}
-```
-
-> Один план — пользователь выбирает месяц или год при покупке (toggle в UI). Экономия рассчитывается автоматически.
-
-#### Perpetual + Maintenance
-
-```json
-{
-  "plans": [
-    {
-      "code": "pro",
-      "tier": "Pro",
-      "billingModel": "Perpetual",
-      "licenseMode": "Machine",
-      "oneTimePrice": 9990,
-      "maintenanceYearlyPrice": 2990,
-      "description": "Бессрочная лицензия",
-      "highlights": ["Покупка навсегда", "Обновления с Maintenance"]
-    }
-  ]
-}
-```
-
-> `maintenanceYearlyPrice` — необязательный аддон. Если `null`, Maintenance недоступен и пользователь получает только ту версию, которую купил.
-
-#### Concurrent (плавающие лицензии)
-
-```json
-{
-  "plans": [
-    {
-      "code": "team",
-      "tier": "ProPlus",
-      "billingModel": "Subscription",
-      "licenseMode": "Concurrent",
-      "monthlyPrice": 1500,
-      "yearlyPrice": 15000,
-      "maxSeats": 10,
-      "maxConcurrentSessions": 10,
-      "description": "Для команд с плавающими лицензиями",
-      "highlights": ["10 одновременных пользователей", "Enterprise API"]
-    }
-  ]
-}
-```
-
-#### Freemium (Free + Pro с лимитами)
-
-```json
-{
-  "plans": [
-    {
-      "code": "free",
-      "tier": "Free",
-      "billingModel": "Free",
-      "description": "Базовые инструменты бесплатно",
-      "highlights": ["Базовые инструменты", "Экспорт (до 10 объектов)"]
-    },
-    {
-      "code": "pro",
-      "tier": "Pro",
-      "billingModel": "Subscription",
-      "monthlyPrice": 490,
-      "yearlyPrice": 4900,
-      "description": "Полный набор инструментов",
-      "highlights": ["Безлимитный экспорт", "Пакетная обработка"]
+      "trialBindingMode": "Account"
     }
   ],
-  "featureLimits": {
-    "free.export": [{ "limitCode": "maxPerCall", "limitType": "MaxPerCall", "limitValue": 10 }],
-    "pro.export": null
-  }
+  "features": [
+    { "code": "basic", "name": "Базовый функционал", "isDefault": true, "planCodes": ["pro"] },
+    {
+      "code": "export",
+      "name": "Экспорт",
+      "planCodes": ["pro"],
+      "limits": { "pro": { "maxPerMonth": 100 } }
+    }
+  ]
 }
 ```
 
-#### Внешнее лицензирование (ExternalOnly)
+#### `plans[]` — тарифные планы
+
+| Поле | Тип | Обяз. | Описание |
+|------|-----|:-----:|----------|
+| `code` | `string` | ✅ | Код плана, уникален в продукте (`^[a-z0-9-]+$`) |
+| `name` | `string` | ✅ | Техническое имя |
+| `planTier` | `enum` | ✅ | `Free` \| `Pro` \| `ProPlus` |
+| `billingModel` | `enum` | ✅ | `Free` \| `Subscription` \| `Perpetual` (`Free` — только для Free-плана) |
+| `maxSeats` | `int` | ✅ | Кол-во рабочих мест (≥ 1) |
+| `displayName` | `string?` | — | Отображаемое имя в UI |
+| `description` | `string?` | — | Описание плана |
+| `highlights` | `string[]?` | — | Маркетинговые буллеты |
+| `licenseMode` | `enum?` | — | `User` \| `Machine` \| `Concurrent` |
+| `monthlyPrice` / `yearlyPrice` | `number?` | — | Цены подписки (₽) |
+| `oneTimePrice` / `maintenanceYearlyPrice` | `number?` | — | Цены Perpetual (₽) |
+| `maxConcurrentSessions` | `int?` | — | Лимит одновременных сессий (для `Concurrent`) |
+| `trialDays` | `int?` | — | Trial для плана (0 = без trial) |
+| `trialBindingMode` | `enum?` | — | `Account` \| `AccountAndMachine` |
+
+> По сравнению со старым единым `product-manifest.json`: `tier` → `planTier`; убраны `currency`, `isActive`, `badge`, `isRecommended` (схема `additionalProperties: false` — лишние поля не пройдут импорт).
+
+#### `features[]` — фичи (с привязкой к планам и лимитами)
+
+Фича сама несёт привязку к планам (`planCodes`) и лимиты (`limits`, ключ — код плана). Отдельных секций `planFeatures` и `featureLimits` больше нет.
+
+| Поле | Тип | Обяз. | Описание |
+|------|-----|:-----:|----------|
+| `code` | `string` | ✅ | Код фичи (`^[a-z0-9-_]+$`), используется в SDK |
+| `name` | `string` | ✅ | Название |
+| `description` | `string?` | — | Описание |
+| `isDefault` | `bool?` | — | Включена во все планы по умолчанию |
+| `planCodes` | `string[]?` | — | Коды планов, к которым привязана фича (каждый должен существовать в `plans[]`) |
+| `limits` | `object?` | — | Лимиты по планам: ключ — код плана, значение — `{ maxPerCall?, maxPerDay?, maxPerMonth?, maxTotal? }` |
+
+> Фичи **не наследуются** между планами — перечисляйте каждый план в `planCodes` явно.
+
+### `release-manifest.json`
+
+Один файл — один релиз. При выходе новой версии публикуется новый `release-manifest.json` (история релизов хранится на платформе).
 
 ```json
 {
-  "product": {
-    "name": "My External Plugin",
-    "licensingMode": "ExternalOnly",
-    "externalPurchaseUrl": "https://example.com/buy",
-    "externalDownloadUrl": "https://example.com/download",
-    "externalLicenseInstructions": "Получите ключ на сайте и введите в настройках плагина"
-  },
-  "plans": [],
-  "features": [],
-  "planFeatures": {},
-  "featureLimits": {}
+  "$schema": "https://grossgeo.example/schemas/release-manifest.v1.json",
+  "manifestVersion": 1,
+  "version": "1.0.0",
+  "channel": "Stable",
+  "distributionType": "Bundle",
+  "changelog": "Первый релиз.",
+  "postInstallAction": "RequireRestart",
+  "netloadDllPath": "Contents/MyPlugin.dll",
+  "minAutoCADVersion": "R24.4",
+  "maxAutoCADVersion": "R25.0",
+  "targetPlatforms": ["AutoCAD", "Civil3D"],
+  "supportedOS": ["Win64"],
+  "loadOnStartup": true
 }
+```
+
+| Поле | Тип | Обяз. | Описание |
+|------|-----|:-----:|----------|
+| `manifestVersion` | `1` | ✅ | Версия схемы |
+| `version` | `string` | ✅ | SemVer: `1.2.0` или `1.2.0.0` |
+| `channel` | `enum` | ✅ | `Stable` \| `Beta` \| `Internal` |
+| `distributionType` | `enum` | ✅ | `PluginDll` (одна DLL) \| `Bundle` (.bundle.zip) \| `Installer` (MSI/EXE) |
+| `changelog` | `string?` | — | Изменения релиза (Markdown) |
+| `postInstallAction` | `enum?` | — | `RequireRestart` \| `CanNetload` |
+| `netloadDllPath` | `string?` | — | Путь к DLL внутри bundle (обязателен при `CanNetload`) |
+| `minAutoCADVersion` / `maxAutoCADVersion` | `string?` | — | Диапазон версий AutoCAD в R-формате (`R24.4`, `R25.0`) |
+| `targetPlatforms` | `string[]?` | — | `AutoCAD`, `Civil3D`, … |
+| `supportedOS` | `string[]?` | — | Напр. `["Win64"]` |
+| `loadOnStartup` / `loadOnCommandInvocation` | `bool?` | — | Стратегия загрузки плагина |
+| `commands` | `string[]?` | — | Команды AutoCAD, регистрируемые плагином |
+| `targetRuntimes` | `string[]?` | — | Напр. `["net48", "net8.0-windows"]` |
+
+> Поля `fixtureFile` и блока `expectations` в схеме нет — это была тест-метаданная старого формата.
+
+### Примеры по сценариям (фрагменты `plans-manifest.json`)
+
+**Perpetual + Maintenance:**
+```json
+{ "code": "pro", "name": "Pro", "planTier": "Pro", "billingModel": "Perpetual", "licenseMode": "Machine",
+  "oneTimePrice": 9990, "maintenanceYearlyPrice": 2990, "maxSeats": 1,
+  "description": "Бессрочная лицензия", "highlights": ["Покупка навсегда", "Обновления с Maintenance"] }
+```
+
+**Concurrent (плавающие лицензии):**
+```json
+{ "code": "team", "name": "Team", "planTier": "ProPlus", "billingModel": "Subscription", "licenseMode": "Concurrent",
+  "monthlyPrice": 1500, "yearlyPrice": 15000, "maxSeats": 10, "maxConcurrentSessions": 10,
+  "description": "Для команд", "highlights": ["10 одновременных пользователей"] }
+```
+
+**Freemium (Free + Pro с лимитом на фиче):**
+```json
+{
+  "plans": [
+    { "code": "free", "name": "Free", "planTier": "Free", "billingModel": "Free", "maxSeats": 1 },
+    { "code": "pro",  "name": "Pro",  "planTier": "Pro",  "billingModel": "Subscription", "maxSeats": 1, "monthlyPrice": 490, "yearlyPrice": 4900 }
+  ],
+  "features": [
+    { "code": "export", "name": "Экспорт", "planCodes": ["free", "pro"],
+      "limits": { "free": { "maxPerCall": 10 } } }
+  ]
+}
+```
+
+**ExternalOnly (лицензирование вне платформы):** `plans-manifest.json` с пустыми `plans`/`features`; внешние ссылки (`externalPurchaseUrl` и т.п.) задаются при создании продукта в Developer Portal:
+```json
+{ "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json", "manifestVersion": 1, "plans": [], "features": [] }
 ```
 
 ### Полные примеры
@@ -886,6 +770,127 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | `TestProduct.Analytics` | Внешнее лицензирование (ExternalOnly) |
 | `TestProduct.Installer` | Установка через EXE/MSI |
 | `TestProduct.PluginDll` | Одиночная DLL (PluginDll) |
+
+---
+
+## Multi-plugin (несколько плагинов в одном процессе)
+
+Когда несколько плагинов работают в одном процессе AutoCAD, статические свойства
+`GrossGeoLicense.IsValid`, `GrossGeoLicense.PlanTier` и т.д. возвращают данные
+**последнего** инициализированного продукта. Это приводит к конфликтам.
+
+### Решение: `ProductLicenseAccessor`
+
+Используйте `GrossGeoLicense.ForProduct(productKey)` для получения accessor,
+привязанного к конкретному продукту:
+
+```csharp
+public class MyPlugin : IExtensionApplication
+{
+    private const string ProductKey = "GG-XXXX-XXXX-XXXX-XXXX";
+    private static ProductLicenseAccessor? _license;
+
+    public void Initialize()
+    {
+        _ = Task.Run(async () =>
+        {
+            await GrossGeoLicense.Initialize(new LicenseOptions
+            {
+                ProductKey = ProductKey,
+                PluginVersion = "1.0.0"
+            });
+
+            _license = GrossGeoLicense.ForProduct(ProductKey);
+        });
+    }
+
+    public void Terminate()
+    {
+        GrossGeoLicense.Shutdown(ProductKey);
+    }
+
+    [CommandMethod("MY_CMD")]
+    public void MyCmd()
+    {
+        var lic = _license;
+        if (lic == null) return;
+
+        if (lic.IsValid)
+        {
+            // Свойства: lic.PlanTier, lic.BillingModel, lic.ExpiresAt ...
+        }
+
+        lic.Protect(() => DoWork(), () => ShowUpgrade());
+
+        if (lic.HasFeature("export")) { DoExport(); }
+
+        lic.RequireFeature("batch",
+            action: () => ProcessBatch(),
+            onMissing: () => ShowUpgrade());
+
+        var limit = lic.GetFeatureLimit("export", "maxPerCall");
+        if (lic.CheckLimit("export", "maxPerCall", objects.Count))
+        {
+            DoExport(objects);
+        }
+    }
+}
+```
+
+### ProductLicenseAccessor — свойства
+
+Accessor предоставляет те же свойства, что и статический `GrossGeoLicense`, но изолированно для конкретного продукта:
+
+| Свойство | Тип | Описание |
+|----------|-----|----------|
+| `ProductKey` | `string` | Ключ продукта |
+| `IsValid` | `bool` | Лицензия валидна |
+| `PlanTier` | `PlanTier` | Уровень плана |
+| `BillingModel` | `BillingModel` | Модель оплаты |
+| `LicenseMode` | `LicenseMode` | Режим лицензирования |
+| `ExpiresAt` | `DateTime?` | Дата истечения |
+| `DaysRemaining` | `int?` | Дней до истечения |
+| `IsInGracePeriod` | `bool` | В grace period |
+| `IsOfflineMode` | `bool` | Работа из кэша |
+| `Features` | `IReadOnlyList<string>` | Доступные features |
+| `FeatureLimits` | `IReadOnlyDictionary<string, int>?` | Лимиты фичей |
+| `HasActiveSession` | `bool` | Есть concurrent-сессия |
+| `SessionToken` | `string?` | Токен concurrent-сессии |
+| `LastResult` | `LicenseResult?` | Последний результат |
+
+### ProductLicenseAccessor — методы
+
+| Метод | Описание |
+|-------|----------|
+| `Check()` | Быстрая проверка из кэша |
+| `CheckAsync(CancellationToken)` | Полная проверка (запрос к User Panel) |
+| `RefreshAsync(CancellationToken)` | Принудительное обновление |
+| `HasFeature(string)` | Проверка фичи |
+| `GetFeatureLimit(string, string)` | Получить лимит |
+| `CheckLimit(string, string, int)` | Проверить лимит |
+| `Protect(Action, Action?)` | Защита с fallback |
+| `Protect<T>(Func<T>, Func<T>?)` | Защита с возвратом значения |
+| `ProtectOrThrow(Action)` | Защита с исключением |
+| `RequireFeature(string, Action, Action?)` | Фича с fallback |
+| `RequireFeatureOrThrow(string, Action)` | Фича с исключением |
+| `RequireLimit(string, string, int, Action, Action<int>?)` | Лимит с fallback |
+
+### Миграция с GrossGeoLicense на ProductLicenseAccessor
+
+| До (статический) | После (per-product) |
+|-------------------|---------------------|
+| `GrossGeoLicense.IsValid` | `_license?.IsValid ?? false` |
+| `GrossGeoLicense.HasFeature("x")` | `_license?.HasFeature("x") ?? false` |
+| `GrossGeoLicense.Protect(...)` | `_license?.Protect(...)` |
+| `GrossGeoLicense.GetFeatureLimit(...)` | `_license?.GetFeatureLimit(...)` |
+| `FeatureGuard.Require("x", ...)` | `_license?.RequireFeature("x", ...)` |
+| `GrossGeoLicense.Shutdown()` | `GrossGeoLicense.Shutdown(ProductKey)` |
+| `GrossGeoLicense.CheckAsync()` | `_license?.CheckAsync()` |
+| `GrossGeoLicense.RefreshAsync()` | `_license?.RefreshAsync()` |
+
+> **Важно:** Статические свойства `GrossGeoLicense.IsValid`, `GrossGeoLicense.PlanTier` и т.д.
+> по-прежнему работают для обратной совместимости, но возвращают данные **последнего**
+> инициализированного продукта. Для multi-plugin сценариев всегда используйте `ForProduct()`.
 
 ---
 

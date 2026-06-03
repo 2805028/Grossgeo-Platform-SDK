@@ -1,0 +1,15 @@
+{
+  "$schema": "https://grossgeo.example/schemas/release-manifest.v1.json",
+  "manifestVersion": 1,
+  "version": "1.0.0",
+  "channel": "Stable",
+  "distributionType": "PluginDll",
+  "changelog": "Первый релиз. Тип дистрибуции PluginDll.",
+  "postInstallAction": "RequireRestart",
+  "netloadDllPath": "TestProduct.PluginDll.dll",
+  "minAutoCADVersion": "R24.4",
+  "maxAutoCADVersion": "R25.0",
+  "targetPlatforms": ["AutoCAD"],
+  "supportedOS": ["Win64"],
+  "loadOnStartup": false
+}

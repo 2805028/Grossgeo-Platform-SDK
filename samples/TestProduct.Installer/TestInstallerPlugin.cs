@@ -28,6 +28,8 @@ namespace TestProduct.Installer
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        private static ProductLicenseAccessor? _license;
+
         #region IExtensionApplication
 
         public void Initialize()
@@ -46,7 +48,7 @@ namespace TestProduct.Installer
 
         public void Terminate()
         {
-            GrossGeoLicense.Shutdown();
+            GrossGeoLicense.Shutdown(ProductKey);
             WriteMessage("\n[TestProduct.Installer] Плагин выгружен");
         }
 
@@ -68,6 +70,8 @@ namespace TestProduct.Installer
                     GracePeriodDays = 7,
                     CheckForUpdatesOnInit = true
                 });
+
+                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"\n[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -104,7 +108,7 @@ namespace TestProduct.Installer
         [CommandMethod("GGINSTTEST")]
         public void InstallerTest()
         {
-            if (!GrossGeoLicense.IsValid)
+            if (!(_license?.IsValid ?? false))
             {
                 WriteMessage("\n[GGINSTTEST] ⚠️ Требуется лицензия");
                 return;
@@ -122,10 +126,10 @@ namespace TestProduct.Installer
         {
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ TestProduct.Installer — SDK Info ═══");
-            sb.AppendLine($"  IsValid: {GrossGeoLicense.IsValid}");
-            sb.AppendLine($"  PlanTier: {GrossGeoLicense.PlanTier}");
-            sb.AppendLine($"  BillingModel: {GrossGeoLicense.BillingModel}");
-            sb.AppendLine($"  LicenseMode: {GrossGeoLicense.LicenseMode}");
+            sb.AppendLine($"  IsValid: {_license?.IsValid}");
+            sb.AppendLine($"  PlanTier: {_license?.PlanTier}");
+            sb.AppendLine($"  BillingModel: {_license?.BillingModel}");
+            sb.AppendLine($"  LicenseMode: {_license?.LicenseMode}");
             sb.AppendLine($"  DistributionType: Installer");
             sb.AppendLine("═══════════════════════════════════════");
 

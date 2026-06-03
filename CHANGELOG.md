@@ -7,6 +7,27 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **Manifests:** all 8 sample products migrated from the single `product-manifest.json` to the two-manifest format — `plans-manifest.json` (plans + features carrying `planCodes`/`limits`) and `release-manifest.json` (one release per file), matching the platform `import-manifest/v2` schemas. `productKey`, `planFeatures`, `featureLimits`, `expectations` and `fixtureFile` are no longer part of the manifests.
+- **README:** manifest section rewritten for the two-manifest format; Feature Guards / Feature Limits references corrected (`planFeatures` → feature `planCodes`, `featureLimits` → feature `limits`).
+
+### Removed
+- Stale `product-manifest.json` from all 8 samples (superseded by `plans-manifest.json` + `release-manifest.json`).
+- Fixture release archives (`samples/**/fixtures/*.bundle.zip`, `*.installer.zip`) and `samples/fixtures-checksums.sha256` — sample release bundles are no longer committed to the repo (added to `.gitignore`).
+
+## [2.1.0] - 2025-06-15
+
+### Added
+- `ProductLicenseAccessor` class for multi-plugin scenarios (multiple plugins in one AutoCAD process)
+- `GrossGeoLicense.ForProduct(productKey)` returns `ProductLicenseAccessor` bound to a specific product
+- `GrossGeoLicense.Shutdown(productKey)` shuts down a specific product instead of global shutdown
+- Multi-plugin documentation section in README
+- Migration table from static `GrossGeoLicense` to `ProductLicenseAccessor`
+
+### Changed
+- All 8 samples updated to use `ProductLicenseAccessor` pattern
+- Quick Start guide updated with `ForProduct()` example
+
 ## [2.0.0] - 2025-06-01
 
 ### Added

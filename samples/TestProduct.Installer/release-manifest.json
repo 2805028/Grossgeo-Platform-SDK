@@ -1,0 +1,14 @@
+{
+  "$schema": "https://grossgeo.example/schemas/release-manifest.v1.json",
+  "manifestVersion": 1,
+  "version": "1.0.0",
+  "channel": "Stable",
+  "distributionType": "Installer",
+  "changelog": "Первый релиз. Тип дистрибуции Installer.",
+  "postInstallAction": "RequireRestart",
+  "minAutoCADVersion": "R24.4",
+  "maxAutoCADVersion": "R25.0",
+  "targetPlatforms": ["AutoCAD", "Civil3D"],
+  "supportedOS": ["Win64"],
+  "loadOnStartup": true
+}
