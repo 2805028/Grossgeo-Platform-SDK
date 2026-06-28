@@ -21,10 +21,9 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- GrossGeo SDK.Stub Reference (Project Reference for testing) -->
+  <!-- GrossGeo SDK.Stub from NuGet (GrossGeo.Contracts types are embedded in the package). -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SDK\GrossGeo.SDK.Stub\GrossGeo.SDK.Stub.csproj" />
-    <ProjectReference Include="..\..\src\Contracts\GrossGeo.Contracts\GrossGeo.Contracts.csproj" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.3" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET Framework 4.8 (AutoCAD 2019-2024) -->
