@@ -23,8 +23,9 @@ namespace TestProduct.PluginDll
     /// </summary>
     public class TestPluginDllPlugin : IExtensionApplication
     {
-        // API Key для TestProduct.PluginDll
-        private const string ProductKey = "GG-PDLL-TEST-0008";
+        // ProductKey (демо-плейсхолдер в формате GG-XXXX-XXXX-XXXX-XXXX).
+        // Замените на ключ своего продукта из Developer Portal.
+        private const string ProductKey = "GG-9D11-4B0C-0008-FE63";
         private const string PluginVersion = "1.0.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;

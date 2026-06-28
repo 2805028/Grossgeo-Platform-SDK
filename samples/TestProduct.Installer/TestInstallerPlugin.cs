@@ -22,8 +22,9 @@ namespace TestProduct.Installer
     /// </summary>
     public class TestInstallerPlugin : IExtensionApplication
     {
-        // API Key для TestProduct.Installer
-        private const string ProductKey = "GG-INST-TEST-0007";
+        // ProductKey (демо-плейсхолдер в формате GG-XXXX-XXXX-XXXX-XXXX).
+        // Замените на ключ своего продукта из Developer Portal.
+        private const string ProductKey = "GG-1457-7E50-0007-AC2D";
         private const string PluginVersion = "1.0.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
