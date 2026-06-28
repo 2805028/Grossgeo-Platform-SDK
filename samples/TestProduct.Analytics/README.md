@@ -6,7 +6,7 @@
 
 | Параметр | Значение |
 |----------|----------|
-| ProductKey | `GG-FA06-B797-8461-2CD1` |
+| ProductKey | задаётся в `TestAnalyticsPlugin.cs` (демо-плейсхолдер; подставьте свой) |
 | LicensingMode | **ExternalOnly** |
 | DistributionType | **Bundle** |
 | Планы | Нет (лицензирование у разработчика) |

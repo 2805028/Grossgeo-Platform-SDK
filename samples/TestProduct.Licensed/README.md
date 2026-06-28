@@ -1,36 +1,38 @@
-# 💎 TestProduct.Licensed
+# TestProduct.Licensed
 
-**Тип:** Perpetual лицензия + Maintenance аддон
+**Тип:** Perpetual-лицензия с опциональным Maintenance
 
-## 📋 Характеристики
+> Параметры ниже соответствуют [`plans-manifest.json`](./plans-manifest.json) этого примера.
+> Maintenance в модели v3 — это **атрибут** Perpetual-плана (`maintenanceYearlyPrice`),
+> а **не** отдельный план. Годовая подписка Maintenance даёт доступ к новым версиям;
+> при её истечении версия фиксируется (Version Lock).
+
+## Характеристики
 
 | Параметр | Значение |
 |----------|----------|
-| ProductKey | `GG-4CE5-8D13-2CB8-032F` |
+| ProductKey | `GG-4CE5-8D13-2CB8-032F` (демо-плейсхолдер; подставьте свой) |
 | LicensingMode | GrossGeo |
 | DistributionType | **Bundle** |
 | Trial | Нет |
 
-## 📊 Планы
+## Планы
 
-| План | Tier | Billing | Period | LicenseMode | Price |
-|------|------|---------|--------|-------------|-------|
-| pro | Pro | Perpetual | OneTime | **Machine** | 9 990 ₽ |
-| pro-plus | ProPlus | Perpetual | OneTime | **User** | 24 990 ₽ |
-| maintenance | Maintenance | Subscription | Yearly | Machine | 2 990 ₽/год |
+| План (`code`) | Tier | Billing | LicenseMode | oneTimePrice | maintenanceYearlyPrice |
+|------|------|---------|-------------|-------------|------------------------|
+| `pro` | Pro | Perpetual | Machine | 9 990 ₽ | 2 990 ₽/год |
+| `pro-plus` | ProPlus | Perpetual | User | 24 990 ₽ | 4 990 ₽/год |
 
-> Maintenance — аддон к Perpetual, требует активный plan `pro`.
+## Features
 
-## 🏷️ Features
+| Feature (`code`) | isDefault | pro | pro-plus |
+|---------|-----------|-----|----------|
+| `export_pdf` | ✅ | ✅ | ✅ |
+| `batch_processing` | — | ✅ | ✅ |
+| `premium_tools` | — | — | ✅ |
+| `enterprise_api` | — | — | ✅ |
 
-| Feature | IsDefault | Pro | Pro+ | Maintenance |
-|---------|-----------|-----|------|-------------|
-| `export_pdf` | ✅ | ✅ | ✅ | ✅ |
-| `batch_processing` | — | ✅ | ✅ | ✅ |
-| `premium_tools` | — | — | ✅ | — |
-| `enterprise_api` | — | — | ✅ | — |
-
-## 🔧 Команды AutoCAD
+## Команды AutoCAD
 
 | Команда | Описание | Лицензия |
 |---------|----------|----------|
@@ -41,9 +43,9 @@
 | `TEST_LICENSE_RECHECK` | Повторная проверка лицензии | Нет |
 | `TEST_LICENSED_HELP` | Справка | Нет |
 
-## 🎯 Что покрывает
+## Что покрывает
 
-- BillingModel.Perpetual (OneTime покупка, бессрочная)
-- PlanTier.Pro (Machine) + PlanTier.ProPlus (**User** — Perpetual+User)
-- PlanTier.Maintenance (аддон, Subscription/Yearly)
+- BillingModel.Perpetual (разовая покупка, бессрочная)
+- PlanTier.Pro (Machine) + PlanTier.ProPlus (User)
+- Maintenance как атрибут плана (`maintenanceYearlyPrice`), без отдельного плана
 - Version Lock при истечении Maintenance

@@ -8,7 +8,7 @@
 
 | Параметр | Значение |
 |----------|----------|
-| API Key | `GG-PDLL-TEST-0008` |
+| ProductKey | задаётся в `TestPluginDllPlugin.cs` (демо-плейсхолдер; подставьте свой) |
 | DistributionType | **PluginDll** |
 | BillingModel | Perpetual (разовая покупка) |
 | LicenseMode | Machine |

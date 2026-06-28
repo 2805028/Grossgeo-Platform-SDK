@@ -6,21 +6,23 @@
 
 | Параметр | Значение |
 |----------|----------|
-| ProductKey | `GG-FRMI-TEST-0004` |
+| ProductKey | задаётся в `TestFreemiumPlugin.cs` (демо-плейсхолдер; подставьте свой) |
 | LicensingMode | GrossGeo |
 | DistributionType | **Bundle** |
 | Trial PRO | **7 дней (Account)** |
 
+> Параметры ниже соответствуют [`plans-manifest.json`](./plans-manifest.json) этого примера.
+
 ## 📊 Планы
 
-| План | Tier | Billing | Period | LicenseMode | Price | Trial |
-|------|------|---------|--------|-------------|-------|-------|
-| free | Free | Free | — | Machine | 0 ₽ | — |
-| pro | Pro | Subscription | Monthly | Machine | 490 ₽/мес | 7 дн. |
+| План (`code`) | Tier | Billing | LicenseMode | monthlyPrice | Trial |
+|------|------|---------|-------------|-------------|-------|
+| `free` | Free | Free | Machine | 0 ₽ | — |
+| `pro` | Pro | Subscription | Machine | 490 ₽ | 7 дн. |
 
 ## 🏷️ Features
 
-| Feature | IsDefault | Free | PRO |
+| Feature (`code`) | isDefault | free | pro |
 |---------|-----------|------|-----|
 | `basic-tools` | ✅ | ✅ | ✅ |
 | `simple-export` | ✅ | ✅ | ✅ |
@@ -31,14 +33,13 @@
 
 ## ⚙️ Feature Limits
 
-| Plan.Feature | LimitCode | LimitType | Value |
-|-------------|-----------|-----------|-------|
-| free.simple-export | maxPerCall | MaxPerCall | 5 |
-| free.simple-export | maxSize | MaxSize | 10 MB |
-| free.batch-processing | maxPerCall | MaxPerCall | 10 |
-| free.batch-processing | maxPerSession | MaxPerSession | 50 |
-| pro.simple-export | — | — | ∞ |
-| pro.batch-processing | — | — | ∞ |
+Допустимые ключи лимита: `maxPerCall`, `maxPerDay`, `maxPerMonth`, `maxTotal`.
+Отсутствие плана в `limits` фичи = безлимитно.
+
+| Feature | План | Лимит | Значение |
+|---------|------|-------|----------|
+| `simple-export` | `free` | `maxPerCall` | 5 |
+| `simple-export` | `pro` | — | ∞ |
 
 ## 🔧 Команды AutoCAD
 
@@ -56,8 +57,8 @@
 
 ## 🎯 Что покрывает
 
-- Freemium модель: Free-план с лимитами + PRO без лимитов
+- Freemium модель: Free-план с лимитом + PRO без лимитов
 - Trial на PRO (7 дней, TrialBindingMode.Account)
-- LimitType.MaxPerCall + LimitType.MaxSize + LimitType.MaxPerSession
+- Feature Limit `maxPerCall` на Free-плане
 - Upsell-механика (GGFMUPGRADE)
 - LicenseMode.Machine + BillingModel.Subscription

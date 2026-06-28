@@ -22,23 +22,27 @@
 
 ## 🏷️ Features
 
-| Feature | IsDefault | IsPublic | Free |
-|---------|-----------|----------|------|
-| `view-objects` | ✅ | ✅ (Guest) | ✅ |
-| `basic-info` | ✅ | ✅ (Guest) | ✅ |
+| Feature (`code`) | isDefault | free |
+|---------|-----------|------|
+| `view-objects` | ✅ | ✅ |
+| `basic-info` | ✅ | ✅ |
+
+> В модели v3 нет флага `IsPublic`. Код, не обёрнутый в `HasFeature` / `FeatureGuard`,
+> доступен всем (включая пользователей без лицензии). Фичи с `isDefault: true` доступны
+> всем авторизованным пользователям во всех планах.
 
 ## 🔧 Команды AutoCAD
 
 | Команда | Описание | Лицензия |
 |---------|----------|----------|
 | `GGFREETEST` | Бесплатная команда | Нет |
-| `GGFREEINFO` | Информация о лицензии (v2) | Нет |
-| `GGFREEPUBLIC` | Демо публичных фичей (IsPublic) | Нет |
+| `GGFREEINFO` | Информация о лицензии | Нет |
+| `GGFREEPUBLIC` | Демо незащищённого функционала | Нет |
 | `GGFREEHELP` | Справка | Нет |
 
 ## 🎯 Что покрывает
 
 - PlanTier.Free + BillingModel.Free
-- IsPublic=true фичи (доступны Guest без авторизации)
-- IsDefault=true фичи (доступны всем авторизованным)
+- Незащищённый код (без SDK-обёртки) — доступен всем
+- isDefault=true фичи (доступны всем авторизованным)
 - DistributionType.Bundle

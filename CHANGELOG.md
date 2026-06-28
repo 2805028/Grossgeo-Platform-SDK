@@ -8,6 +8,49 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **Samples build via NuGet.** All 8 sample `.csproj` now reference the SDK as
+  `<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.3" />` instead of a
+  `ProjectReference` into `..\..\src\...` (which does not exist in this public repo, so the
+  samples did not compile). `GrossGeo.Contracts` types ship embedded in the package, so no
+  separate Contracts reference is needed. Samples now build standalone after `dotnet restore`.
+- **README / samples README:** all version references updated to **2.1.3**.
+- **Sample READMEs aligned with manifests + licensing model v3:** removed the obsolete `IsPublic`
+  feature flag and `Period`/separate Monthly-Yearly plan rows; `TestProduct.Subscription` and
+  `TestProduct.Licensed` now describe merged monthly/yearly pricing and `maintenanceYearlyPrice`
+  as a plan attribute (no separate Maintenance plan); feature-limit tables corrected to the four
+  valid limit keys (`maxPerCall`, `maxPerDay`, `maxPerMonth`, `maxTotal`).
+
+### Fixed
+- **Invalid sample ProductKeys.** `TestProduct.Installer` (`GG-INST-TEST-0007`) and
+  `TestProduct.PluginDll` (`GG-PDLL-TEST-0008`) used a legacy key shape rejected by the SDK
+  format validator (`GG-XXXX-XXXX-XXXX-XXXX`), so `GrossGeoLicense.Initialize` failed with
+  `Invalid ProductKey format`. Replaced with valid-format demo placeholders.
+
+### Removed
+- Test account credentials (emails + passwords) and internal back-end testing steps from
+  `samples/README.md`.
+
+## [2.1.3] - 2025-06-17
+
+### Fixed
+- **Concurrent sessions in multi-product processes.** Static `AcquireSession` /
+  `ReleaseSession` / `SendSessionHeartbeat` were gated by the last `Initialize`; with several
+  products in one AutoCAD process, acquiring a Concurrent session failed with
+  `NOT_CONCURRENT_MODE`. Session methods are now available per-product on
+  `ProductLicenseAccessor` (`ForProduct(key).AcquireSessionAsync(...)`); the static methods stay
+  compatible by auto-resolving the single Concurrent product.
+
+## [2.1.1] - 2025-06-16
+
+### Fixed
+- **CRIT-01 — obfuscation broke IPC deserialization.** The obfuscation step had
+  `UseUnicodeNames=true`, which renamed types to invisible Unicode glyphs; `System.Text.Json`
+  then failed with `Could not resolve type ' '` during IPC deserialization, so licensed
+  products were seen as Free/Invalid. Disabled `UseUnicodeNames` and added explicit
+  `[JsonPropertyName]` to all cached-license DTO fields (offline cache in the obfuscated build).
+  This release replaces the broken obfuscated 2.1.0 on NuGet.
+
+### Changed
 - **Manifests:** all 8 sample products migrated from the single `product-manifest.json` to the two-manifest format — `plans-manifest.json` (plans + features carrying `planCodes`/`limits`) and `release-manifest.json` (one release per file), matching the platform `import-manifest/v2` schemas. `productKey`, `planFeatures`, `featureLimits`, `expectations` and `fixtureFile` are no longer part of the manifests.
 - **README:** manifest section rewritten for the two-manifest format; Feature Guards / Feature Limits references corrected (`planFeatures` → feature `planCodes`, `featureLimits` → feature `limits`).
 
