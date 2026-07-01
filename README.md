@@ -47,7 +47,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.3" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.4" />
 ```
 
 Все необходимые типы (`PlanTier`, `BillingModel`, `LicenseMode`, `LicenseCheckStatus`) включены в пакет.

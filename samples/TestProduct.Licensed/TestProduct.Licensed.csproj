@@ -23,7 +23,7 @@
 
   <!-- GrossGeo SDK.Stub from NuGet (GrossGeo.Contracts types are embedded in the package). -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.3" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.4" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET Framework 4.8 (AutoCAD 2019-2024) -->

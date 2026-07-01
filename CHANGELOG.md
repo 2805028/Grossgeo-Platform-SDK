@@ -9,11 +9,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - **Samples build via NuGet.** All 8 sample `.csproj` now reference the SDK as
-  `<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.3" />` instead of a
+  `<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.4" />` instead of a
   `ProjectReference` into `..\..\src\...` (which does not exist in this public repo, so the
   samples did not compile). `GrossGeo.Contracts` types ship embedded in the package, so no
   separate Contracts reference is needed. Samples now build standalone after `dotnet restore`.
-- **README / samples README:** all version references updated to **2.1.3**.
+- **README / samples README:** all version references updated to **2.1.4**.
 - **Sample READMEs aligned with manifests + licensing model v3:** removed the obsolete `IsPublic`
   feature flag and `Period`/separate Monthly-Yearly plan rows; `TestProduct.Subscription` and
   `TestProduct.Licensed` now describe merged monthly/yearly pricing and `maintenanceYearlyPrice`
@@ -29,6 +29,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed
 - Test account credentials (emails + passwords) and internal back-end testing steps from
   `samples/README.md`.
+
+## [2.1.4] - 2026-06-29
+
+### Changed
+- **Republished as a consistent, obfuscated build.** The package now ships `GrossGeo.SDK.Stub`
+  **2.1.4** with the embedded `GrossGeo.Contracts` **also at 2.1.4** (same strong-name token).
+  This resolves a distribution mismatch seen in some bundles where an obfuscated SDK.Stub 2.1.x
+  was paired with a stale `GrossGeo.Contracts.dll` 1.0.0. No API changes vs 2.1.3 — reference
+  2.1.4 and let NuGet restore both DLLs from the single package (do not hand-copy Contracts).
 
 ## [2.1.3] - 2025-06-17
 
