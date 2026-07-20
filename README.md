@@ -21,6 +21,7 @@
 - [Concurrent Sessions](#concurrent-sessions)
 - [Офлайн-режим](#офлайн-режим-graceful-degradation)
 - [Проверка обновлений](#проверка-обновлений)
+- [Deep Links (`grossgeo://`)](#deep-links-grossgeo)
 - [LicenseOptions](#licenseoptions)
 - [API Reference](#api-reference)
 - [Манифесты продукта](#манифесты-продукта)
@@ -47,10 +48,12 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.4" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.6" />
 ```
 
 Все необходимые типы (`PlanTier`, `BillingModel`, `LicenseMode`, `LicenseCheckStatus`) включены в пакет.
+
+> ⚠️ **Требование к User Panel.** Начиная с **2.1.5** SDK криптографически проверяет подпись live-ответов User Panel — это требует **GrossGeo User Panel 1.0.2606.4007 или новее**. На более старой панели лицензия не подтвердится (это защита от подмены источника). Пользователям достаточно принять авто-обновление панели.
 
 **Поддерживаемые TFM:**
 - `net48` — AutoCAD 2019–2024
@@ -452,6 +455,27 @@ if (update.HasUpdate)
 
 ---
 
+## Deep Links (`grossgeo://`)
+
+Открывайте страницы User Panel по кнопке из своего плагина — «Купить лицензию», «Оставить отзыв», «Попробовать бесплатно». Для trial есть SDK-метод `RequestTrialAsync()` (2.1.6+), который использует ваш `ProductKey` и не требует ручной сборки URI:
+
+```csharp
+// Кнопка «Попробовать бесплатно» — панель откроется на карточке продукта
+// и покажет подтверждение старта trial (никогда не активирует лицензию тихо).
+await GrossGeoLicense.RequestTrialAsync();
+
+// Кнопка «Купить лицензию» — через URI (нужен ProductId — GUID из каталога, не ProductKey):
+Process.Start(new ProcessStartInfo
+{
+    FileName = "grossgeo://purchase/3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    UseShellExecute = true   // обязательно на .NET 8
+});
+```
+
+Полный список команд, разница ProductId / ProductKey / UpgradeCode и обработка «панель не установлена» — в **[docs/deep-links.md](docs/deep-links.md)**.
+
+---
+
 ## LicenseOptions
 
 ```csharp
@@ -553,6 +577,7 @@ new LicenseOptions
 | `AcquireSessionAsync(string?, CancellationToken)` | Получить concurrent-сессию |
 | `ReleaseSessionAsync(CancellationToken)` | Освободить сессию |
 | `CheckForUpdatesAsync(CancellationToken)` | Проверка обновлений |
+| `RequestTrialAsync(CancellationToken)` | Открыть User Panel и запросить старт trial с подтверждением (deep-link, 2.1.6+; см. [docs/deep-links.md](docs/deep-links.md)) |
 | `ClearLocalCache()` | Очистить кэш |
 
 ### Guards (вспомогательные классы)

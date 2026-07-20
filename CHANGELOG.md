@@ -8,17 +8,47 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
-- **Samples build via NuGet.** All 8 sample `.csproj` now reference the SDK as
-  `<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.4" />` instead of a
-  `ProjectReference` into `..\..\src\...` (which does not exist in this public repo, so the
-  samples did not compile). `GrossGeo.Contracts` types ship embedded in the package, so no
-  separate Contracts reference is needed. Samples now build standalone after `dotnet restore`.
-- **README / samples README:** all version references updated to **2.1.4**.
+- **Samples + docs bumped to 2.1.6.** All 8 sample `.csproj` and every version reference in
+  `README.md` / `samples/README.md` now target `2.1.6`.
+- **New guide `docs/deep-links.md`** — how to open GrossGeo User Panel pages from a plugin
+  (purchase / product / reviews / start-trial), the ProductId vs ProductKey vs UpgradeCode
+  distinction, and the `RequestTrialAsync()` SDK method.
+
+## [2.1.6] - 2026-07-21
+
+### Added
+- **`GrossGeoLicense.RequestTrialAsync()`** — opens the User Panel at your product and asks it to
+  show the trial-activation confirmation, using the `ProductKey` you already have (no ProductId
+  needed). Never activates a license silently. Companion `grossgeo://start-trial/{productId|productKey}`
+  URI. See `docs/deep-links.md`.
+
+### Security
+- The published package is now **Authenticode-signed** (all DLLs) and the `.nupkg` is
+  **author-signed** on NuGet.org (GROSSGEOTECH LLC).
+
+## [2.1.5] - 2026-07-20
+
+### Security
+- **Live IPC response signatures are now verified.** The SDK cryptographically validates the
+  RSA-SHA256 signature of live responses from the User Panel against a pinned central key (with
+  anti-replay binding), not just the offline cache — closing a pipe-squatting vector where a
+  local process could impersonate the panel and return a fake "valid" license.
+- ⚠️ **Requires GrossGeo User Panel `1.0.2606.4007` or newer.** Older panels sign responses with a
+  key the pinned SDK does not trust, so the license will not validate. End users only need to
+  accept the panel auto-update.
+
+### Changed
+- `sdkVersion` is now reported over IPC (previously empty).
+
+## [2.1.4] - 2026-06-29
+
+### Changed
+- **Samples build via NuGet.** All 8 sample `.csproj` reference the SDK as a `PackageReference`
+  (`GrossGeo.Contracts` types ship embedded in the package — no separate Contracts reference).
 - **Sample READMEs aligned with manifests + licensing model v3:** removed the obsolete `IsPublic`
-  feature flag and `Period`/separate Monthly-Yearly plan rows; `TestProduct.Subscription` and
-  `TestProduct.Licensed` now describe merged monthly/yearly pricing and `maintenanceYearlyPrice`
-  as a plan attribute (no separate Maintenance plan); feature-limit tables corrected to the four
-  valid limit keys (`maxPerCall`, `maxPerDay`, `maxPerMonth`, `maxTotal`).
+  feature flag and `Period`/separate Monthly-Yearly plan rows; merged monthly/yearly pricing and
+  `maintenanceYearlyPrice` as a plan attribute; feature-limit tables corrected to the four valid
+  limit keys (`maxPerCall`, `maxPerDay`, `maxPerMonth`, `maxTotal`).
 
 ### Fixed
 - **Invalid sample ProductKeys.** `TestProduct.Installer` (`GG-INST-TEST-0007`) and
@@ -30,14 +60,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Test account credentials (emails + passwords) and internal back-end testing steps from
   `samples/README.md`.
 
-## [2.1.4] - 2026-06-29
-
-### Changed
-- **Republished as a consistent, obfuscated build.** The package now ships `GrossGeo.SDK.Stub`
-  **2.1.4** with the embedded `GrossGeo.Contracts` **also at 2.1.4** (same strong-name token).
-  This resolves a distribution mismatch seen in some bundles where an obfuscated SDK.Stub 2.1.x
-  was paired with a stale `GrossGeo.Contracts.dll` 1.0.0. No API changes vs 2.1.3 — reference
-  2.1.4 and let NuGet restore both DLLs from the single package (do not hand-copy Contracts).
+### Note
+- **Republished as a consistent, obfuscated build.** The package ships `GrossGeo.SDK.Stub` 2.1.4
+  with the embedded `GrossGeo.Contracts` also at 2.1.4 (same strong-name token) — resolves a
+  distribution mismatch where an obfuscated SDK.Stub 2.1.x was paired with a stale
+  `GrossGeo.Contracts.dll` 1.0.0. No API changes vs 2.1.3 — reference 2.1.4 and let NuGet restore
+  both DLLs from the single package (do not hand-copy Contracts).
 
 ## [2.1.3] - 2025-06-17
 
