@@ -1,59 +1,57 @@
-# TestProduct.Subscription
+# 🔄 TestProduct.Subscription
 
-**Тип:** Подписка (месячная/годовая цена на одном плане) + Trial + Feature Limits
+**Тип:** Подписка (Monthly/Yearly) + Trial
 
-> Параметры ниже соответствуют [`plans-manifest.json`](./plans-manifest.json) этого примера.
-> Период (месяц/год) — это не отдельный план, а toggle при покупке: на одном плане заданы
-> `monthlyPrice` и `yearlyPrice` (модель лицензирования v3).
-
-## Характеристики
+## 📋 Характеристики
 
 | Параметр | Значение |
 |----------|----------|
-| ProductKey | задаётся в `TestSubscriptionPlugin.cs` (демо-плейсхолдер; подставьте свой) |
+| ProductKey | `GG-SUBS-TEST-0002` |
 | LicensingMode | GrossGeo |
 | DistributionType | **Bundle** |
+| Trial | 14 дней (Account) |
 
-## Планы
+## 📊 Планы
 
-| План (`code`) | Tier | Billing | LicenseMode | monthlyPrice | yearlyPrice | Trial |
-|------|------|---------|-------------|-------------|------------|-------|
-| `pro` | Pro | Subscription | User | 990 ₽ | 9 900 ₽ | 14 дн. (Account) |
-| `pro-plus` | ProPlus | Subscription | User | 1 990 ₽ | 19 900 ₽ | — |
+| План | Tier | Billing | Period | LicenseMode | Price | Trial |
+|------|------|---------|--------|-------------|-------|-------|
+| standard | Pro | Subscription | Monthly | User | 990 ₽/мес | 14 дн. |
+| standard-yearly | Pro | Subscription | Yearly | User | 9 900 ₽/год | — |
+| pro | ProPlus | Subscription | Monthly | User | 1 990 ₽/мес | — |
+| pro-yearly | ProPlus | Subscription | **Yearly** | User | 19 900 ₽/год | — |
 
-## Features
+## 🏷️ Features
 
-| Feature (`code`) | isDefault | pro | pro-plus |
-|---------|-----------|-----|----------|
+| Feature | IsDefault | Standard | Pro/Pro-Yearly |
+|---------|-----------|----------|----------------|
 | `basic` | ✅ | ✅ | ✅ |
 | `export` | — | ✅ | ✅ |
 | `advanced-export` | — | — | ✅ |
 | `batch` | — | — | ✅ |
 
-## Feature Limits
+## ⚙️ Feature Limits
 
-Лимиты задаются в фиче (`limits`, ключ — код плана). Допустимые ключи лимита:
-`maxPerCall`, `maxPerDay`, `maxPerMonth`, `maxTotal`. Отсутствие плана в `limits` = безлимитно.
+| Plan.Feature | LimitCode | LimitType | Value |
+|-------------|-----------|-----------|-------|
+| standard.export | monthlyExports | MaxPerPeriod | 100 |
+| standard-yearly.export | — | — | ∞ |
+| pro.export | — | — | ∞ |
 
-| Feature | План | Лимит | Значение |
-|---------|------|-------|----------|
-| `export` | `pro` | `maxPerMonth` | 100 |
-| `export` | `pro-plus` | — | ∞ |
-
-## Команды AutoCAD
+## 🔧 Команды AutoCAD
 
 | Команда | Описание | Лицензия |
 |---------|----------|----------|
 | `GGSUBSINFO` | Информация о лицензии | Нет |
 | `GGSUBSTEST` | Базовая команда | Да |
 | `GGSUBSFEATURES` | Демо всех features | Да |
-| `GGSUBSEXPORT` | Экспорт (feature: export, лимит maxPerMonth) | Да |
+| `GGSUBSEXPORT` | Экспорт (feature: export) | Да |
 | `GGSUBSBATCH` | Пакетная обработка (feature: batch) | Да |
 
-## Что покрывает
+## 🎯 Что покрывает
 
-- BillingModel.Subscription (monthlyPrice + yearlyPrice на одном плане)
+- BillingModel.Subscription (Monthly + Yearly)
 - PlanTier.Pro + PlanTier.ProPlus
 - LicenseMode.User
 - Trial 14 дней (TrialBindingMode.Account)
-- Feature Limit `maxPerMonth` (usage tracking через API)
+- LimitType.MaxPerPeriod
+- ProPlus + Yearly (годовая подписка на ProPlus)

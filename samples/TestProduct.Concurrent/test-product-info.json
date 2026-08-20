@@ -1,0 +1,12 @@
+{
+  "name": "Test Product Concurrent",
+  "slug": "test-product-concurrent",
+  "shortDescription": "Тестовый Multi-tier продукт с Concurrent лицензированием",
+  "fullDescription": "Плагин для тестирования multi-tier модели с concurrent сессиями. Free/Pro/Pro+ планы, Graduated Feature Limits, MaxPerSession, Heartbeat, Session Timeout, Force Release.",
+  "licensingMode": "GrossGeo",
+  "externalPurchaseUrl": null,
+  "externalDownloadUrl": null,
+  "externalLicenseInstructions": null,
+  "trialDays": 7,
+  "tags": ["concurrent", "multi-tier", "testing"]
+}

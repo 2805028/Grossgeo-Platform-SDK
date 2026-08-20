@@ -1,0 +1,12 @@
+{
+  "name": "Test Product Subscription",
+  "slug": "test-product-subscription",
+  "shortDescription": "Тестовый продукт с Trial и подпиской",
+  "fullDescription": "Плагин для тестирования подписочной модели. Trial 14 дней, Pro и Pro+ планы. Демонстрирует PlanTier.Pro/ProPlus, BillingModel.Subscription, LicenseMode.User, FeatureLimit MaxPerMonth.",
+  "licensingMode": "GrossGeo",
+  "externalPurchaseUrl": null,
+  "externalDownloadUrl": null,
+  "externalLicenseInstructions": null,
+  "trialDays": 14,
+  "tags": ["subscription", "trial", "testing"]
+}

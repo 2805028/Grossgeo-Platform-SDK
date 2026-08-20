@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
@@ -13,16 +13,16 @@
     <Version>2.1.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Subscription</Product>
-    <Description>Тестовый продукт с Trial и подпиской - демонстрация features</Description>
+    <Description>РўРµСЃС‚РѕРІС‹Р№ РїСЂРѕРґСѓРєС‚ СЃ Trial Рё РїРѕРґРїРёСЃРєРѕР№ - РґРµРјРѕРЅСЃС‚СЂР°С†РёСЏ features</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- GrossGeo SDK.Stub from NuGet (GrossGeo.Contracts types are embedded in the package). -->
+  <!-- GrossGeo SDK.Stub Reference -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.6" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.8" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->

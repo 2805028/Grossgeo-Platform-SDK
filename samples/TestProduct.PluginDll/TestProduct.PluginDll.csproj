@@ -13,7 +13,7 @@
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product PluginDll</Product>
-    <Description>Тестовый PluginDll продукт — одиночная DLL без bundle</Description>
+    <Description>РўРµСЃС‚РѕРІС‹Р№ PluginDll РїСЂРѕРґСѓРєС‚ вЂ” РѕРґРёРЅРѕС‡РЅР°СЏ DLL Р±РµР· bundle</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
@@ -22,7 +22,7 @@
 
   <!-- GrossGeo SDK.Stub from NuGet (GrossGeo.Contracts types are embedded in the package). -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.6" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.8" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->

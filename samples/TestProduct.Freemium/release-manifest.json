@@ -7,7 +7,7 @@
   "changelog": "Первый релиз. Free и Pro планы, Feature Limits.",
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "Contents/TestProduct.Freemium.dll",
-  "minAutoCADVersion": "R24.4",
+  "minAutoCADVersion": "R24.3",
   "maxAutoCADVersion": "R25.0",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],

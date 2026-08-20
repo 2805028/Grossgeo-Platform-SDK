@@ -23,13 +23,12 @@ namespace TestProduct.Licensed
     /// </summary>
     public class TestLicensedPlugin : IExtensionApplication
     {
-        // API Key из DbSeeder.PaidPerpetualPluginId
-        private const string ProductKey = "GG-4CE5-8D13-2CB8-032F";
+        // Демонстрационный ProductKey. Для своего продукта возьмите ключ в Developer Portal.
+        private const string ProductKey = "GG-615B-D673-5B63-4699";
         private const string PluginVersion = "1.1.0";
 
+        private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(ProductKey);
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
-
-        private static ProductLicenseAccessor? _license;
 
         #region IExtensionApplication
 
@@ -70,8 +69,6 @@ namespace TestProduct.Licensed
                     CheckForUpdatesOnInit = true,
                     IpcTimeoutSeconds = 10
                 });
-
-                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -127,25 +124,25 @@ namespace TestProduct.Licensed
             sb.AppendLine($"║  Plugin Version:   {PluginVersion,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine($"║  Initialized:      {GrossGeoLicense.IsInitialized,-39} ║");
-            sb.AppendLine($"║  Valid:            {_license?.IsValid,-39} ║");
+            sb.AppendLine($"║  Valid:            {License.IsValid,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 
             // Модель лицензирования
             sb.AppendLine("║  License Model:                                                ║");
-            sb.AppendLine($"║    PlanTier:       {_license?.PlanTier,-39} ║");
-            sb.AppendLine($"║    BillingModel:   {_license?.BillingModel,-39} ║");
-            sb.AppendLine($"║    LicenseMode:    {_license?.LicenseMode,-39} ║");
+            sb.AppendLine($"║    PlanTier:       {License.PlanTier,-39} ║");
+            sb.AppendLine($"║    BillingModel:   {License.BillingModel,-39} ║");
+            sb.AppendLine($"║    LicenseMode:    {License.LicenseMode,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 
             // Perpetual + Maintenance
             sb.AppendLine("║  Perpetual Details:                                           ║");
-            sb.AppendLine($"║    ExpiresAt:      {_license?.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)",-39} ║");
-            sb.AppendLine($"║    DaysRemaining:  {_license?.DaysRemaining?.ToString() ?? "∞",-39} ║");
-            sb.AppendLine($"║    Grace Period:   {_license?.IsInGracePeriod,-39} ║");
-            sb.AppendLine($"║    Offline Mode:   {_license?.IsOfflineMode,-39} ║");
+            sb.AppendLine($"║    ExpiresAt:      {License.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)",-39} ║");
+            sb.AppendLine($"║    DaysRemaining:  {License.DaysRemaining?.ToString() ?? "∞",-39} ║");
+            sb.AppendLine($"║    Grace Period:   {License.IsInGracePeriod,-39} ║");
+            sb.AppendLine($"║    Offline Mode:   {License.IsOfflineMode,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 
-            var features = _license?.Features ?? Array.Empty<string>();
+            var features = License.Features;
             if (features.Count > 0)
             {
                 sb.AppendLine("║  Features:                                                   ║");
@@ -171,12 +168,12 @@ namespace TestProduct.Licensed
         {
             WriteMessage("\n[TEST_PROTECTED_CMD] Выполнение защищённой команды...");
 
-            var executed = _license?.Protect(
+            var executed = License.Protect(
                 action: () =>
                 {
                     WriteMessage("[TEST_PROTECTED_CMD] ✅ Лицензия валидна!");
-                    WriteMessage($"[TEST_PROTECTED_CMD] PlanTier: {_license?.PlanTier}");
-                    WriteMessage($"[TEST_PROTECTED_CMD] BillingModel: {_license?.BillingModel}");
+                    WriteMessage($"[TEST_PROTECTED_CMD] PlanTier: {License.PlanTier}");
+                    WriteMessage($"[TEST_PROTECTED_CMD] BillingModel: {License.BillingModel}");
                     WriteMessage("[TEST_PROTECTED_CMD] 🎉 Команда выполнена!");
                 },
                 onBlocked: () =>
@@ -186,7 +183,7 @@ namespace TestProduct.Licensed
                 }
             );
 
-            WriteMessage($"[TEST_PROTECTED_CMD] Результат: {(executed == true ? "Выполнено" : "Заблокировано")}");
+            WriteMessage($"[TEST_PROTECTED_CMD] Результат: {(executed ? "Выполнено" : "Заблокировано")}");
         }
 
         /// <summary>
@@ -201,13 +198,13 @@ namespace TestProduct.Licensed
 
             foreach (var feature in featuresToCheck)
             {
-                var hasFeature = _license?.HasFeature(feature);
-                var icon = hasFeature == true ? "✅" : "❌";
-                WriteMessage($"  {icon} '{feature}': {(hasFeature == true ? "Доступна" : "Недоступна")}");
+                var hasFeature = License.HasFeature(feature);
+                var icon = hasFeature ? "✅" : "❌";
+                WriteMessage($"  {icon} '{feature}': {(hasFeature ? "Доступна" : "Недоступна")}");
             }
 
             WriteMessage("\n[TEST_FEATURE_CHECK] RequireFeature('premium_tools')...");
-            _license?.RequireFeature(
+            License.RequireFeature(
                 "premium_tools",
                 action: () => WriteMessage("  ✅ Premium Tools активированы!"),
                 onMissing: () => WriteMessage("  ⚠️ Premium Tools недоступны в вашей лицензии")
@@ -262,8 +259,7 @@ namespace TestProduct.Licensed
 
             try
             {
-                var lic = _license ?? GrossGeoLicense.ForProduct(ProductKey);
-                var result = await lic.CheckAsync();
+                var result = await License.CheckAsync();
                 WriteMessage($"  Статус:       {result.Status}");
                 WriteMessage($"  IsValid:      {result.IsValid}");
                 WriteMessage($"  PlanTier:     {result.PlanTier}");

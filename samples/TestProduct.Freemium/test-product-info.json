@@ -1,0 +1,12 @@
+{
+  "name": "Test Product Freemium",
+  "slug": "test-product-freemium",
+  "shortDescription": "Тестовый Freemium продукт — базовые функции бесплатно, PRO по подписке",
+  "fullDescription": "Плагин для тестирования freemium-модели. Бесплатный план с ограничениями (Feature Limits), Pro план без ограничений. Демонстрирует MaxPerCall и MaxSize лимиты.",
+  "licensingMode": "GrossGeo",
+  "externalPurchaseUrl": null,
+  "externalDownloadUrl": null,
+  "externalLicenseInstructions": null,
+  "trialDays": 0,
+  "tags": ["freemium", "feature-limits", "testing"]
+}

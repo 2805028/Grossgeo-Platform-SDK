@@ -1,0 +1,12 @@
+{
+  "name": "Test Product Free",
+  "slug": "test-product-free",
+  "shortDescription": "Тестовый FREE продукт — работает без лицензии",
+  "fullDescription": "Полностью бесплатный плагин для тестирования. Работает без проверки лицензии, все фичи доступны по умолчанию. Используется для E2E тестирования сценария Free-продукта.",
+  "licensingMode": "GrossGeo",
+  "externalPurchaseUrl": null,
+  "externalDownloadUrl": null,
+  "externalLicenseInstructions": null,
+  "trialDays": 0,
+  "tags": ["free", "testing"]
+}

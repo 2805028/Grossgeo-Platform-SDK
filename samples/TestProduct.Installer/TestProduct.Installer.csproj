@@ -13,14 +13,14 @@
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Installer</Product>
-    <Description>Тестовый продукт с типом дистрибуции Installer (MSI/EXE)</Description>
+    <Description>РўРµСЃС‚РѕРІС‹Р№ РїСЂРѕРґСѓРєС‚ СЃ С‚РёРїРѕРј РґРёСЃС‚СЂРёР±СѓС†РёРё Installer (MSI/EXE)</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- StubInstaller — отдельный проект внутри директории, исключаем из рекурсивного glob -->
+  <!-- StubInstaller вЂ” РѕС‚РґРµР»СЊРЅС‹Р№ РїСЂРѕРµРєС‚ РІРЅСѓС‚СЂРё РґРёСЂРµРєС‚РѕСЂРёРё, РёСЃРєР»СЋС‡Р°РµРј РёР· СЂРµРєСѓСЂСЃРёРІРЅРѕРіРѕ glob -->
   <ItemGroup>
     <Compile Remove="StubInstaller\**" />
     <None Remove="StubInstaller\**" />
@@ -29,7 +29,7 @@
 
   <!-- GrossGeo SDK.Stub from NuGet (GrossGeo.Contracts types are embedded in the package). -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.6" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.8" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->

@@ -1,0 +1,12 @@
+{
+  "name": "Test Product Licensed",
+  "slug": "test-product-licensed",
+  "shortDescription": "Тестовый продукт с Perpetual лицензией и Maintenance",
+  "fullDescription": "Плагин для тестирования perpetual-модели лицензирования. Pro и ProPlus планы с разовой покупкой, Maintenance как атрибут плана для обновлений. Демонстрирует Version Lock при истечении Maintenance.",
+  "licensingMode": "GrossGeo",
+  "externalPurchaseUrl": null,
+  "externalDownloadUrl": null,
+  "externalLicenseInstructions": null,
+  "trialDays": 0,
+  "tags": ["perpetual", "maintenance", "testing"]
+}

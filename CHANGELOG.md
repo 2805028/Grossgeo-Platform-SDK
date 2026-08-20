@@ -7,14 +7,49 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.1.8] - 2026-08-20
+
+### Added
+- **`LicenseResult.Unavailable(...)`** — "could not ask" is now a distinct outcome from
+  "no licence". A silent channel, a User Panel that is not running, or the SDK's own rate
+  limiter no longer reach your product as `Blocked`. `IsValid` is still `false` in both
+  cases — the product must not run — but the reason differs, and you can act on it: do not
+  disable features permanently, and do not prompt the user to buy a licence they already own.
+
 ### Changed
-- **Samples + docs bumped to 2.1.6.** All 8 sample `.csproj` and every version reference in
-  `README.md` / `samples/README.md` now target `2.1.6`.
-- **New guide `docs/deep-links.md`** — how to open GrossGeo User Panel pages from a plugin
-  (purchase / product / reviews / start-trial), the ProductId vs ProductKey vs UpgradeCode
-  distinction, and the `RequestTrialAsync()` SDK method.
+- **The cached verdict has its own per-product store, keyed by ProductKey.** Offline operation
+  no longer depends on an active lease and now survives a restart. Free products previously
+  lost their cached verdict on restart; they no longer do.
+- **The on-disk cache record is merged instead of being replaced** by whichever writer touched
+  it last. Lease renewal used to erase the ProductKey and the offline expiry, which broke
+  offline degradation from the very first renewal.
+- **A cached status is raised only on proof**, never by default.
+- **The panel's answer budget is derived from the channel timeout** rather than being an
+  independent number, so the panel cannot spend longer producing an answer than the product
+  is willing to wait for one.
+- **Half-connectivity (captive portal) is read as absence of network**, not as a server denial.
+- Samples and docs target `2.1.8`.
+
+## [2.1.7] - 2026-08-13
+
+### Changed
+- **Offline grace lasts the full period the platform signed** (`cacheValidUntil`) instead of
+  being cut to 24 hours by the live-path replay window.
+- **A failed signature or integrity check no longer deletes the cached licence** — a single
+  transient failure can no longer destroy the only offline artefact you have.
+
+### Added
+- A second trusted central-key thumbprint, so replacing the signing key no longer requires
+  every user to reinstall.
+- The plugin version is reported to the platform on licence validation (diagnostics only —
+  no version gating).
 
 ## [2.1.6] - 2026-07-21
+
+### Added
+- **Guide `docs/deep-links.md`** — how to open GrossGeo User Panel pages from a plugin
+  (purchase / product / reviews / start-trial), the ProductId vs ProductKey vs UpgradeCode
+  distinction, and the `RequestTrialAsync()` SDK method.
 
 ### Added
 - **`GrossGeoLicense.RequestTrialAsync()`** — opens the User Panel at your product and asks it to

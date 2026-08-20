@@ -24,13 +24,12 @@ namespace TestProduct.Concurrent
     /// </summary>
     public class TestConcurrentPlugin : IExtensionApplication
     {
-        // API Key из DbSeeder.ConcurrentPluginId
-        private const string ProductKey = "GG-FAAE-36D8-1C93-BD79";
+        // Демонстрационный ProductKey. Для своего продукта возьмите ключ в Developer Portal.
+        private const string ProductKey = "GG-E597-C7A1-CCED-D6E2";
         private const string PluginVersion = "1.0.0";
 
+        private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(ProductKey);
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
-
-        private static ProductLicenseAccessor? _license;
 
         #region IExtensionApplication
 
@@ -51,9 +50,9 @@ namespace TestProduct.Concurrent
         public void Terminate()
         {
             // v2: Освобождаем concurrent-сессию при выгрузке
-            if ((_license?.HasActiveSession ?? false))
+            if (License.HasActiveSession)
             {
-                _ = GrossGeoLicense.ReleaseSessionAsync();
+                _ = License.ReleaseSessionAsync();
             }
 
             GrossGeoLicense.Shutdown(ProductKey);
@@ -78,8 +77,6 @@ namespace TestProduct.Concurrent
                     CheckForUpdatesOnInit = true
                 });
 
-                _license = GrossGeoLicense.ForProduct(ProductKey);
-
                 WriteMessage($"[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
                 WriteMessage($"      - IsValid: {result.IsValid}");
@@ -96,7 +93,7 @@ namespace TestProduct.Concurrent
                 if (result.IsValid && result.LicenseMode == GrossGeo.Contracts.Licensing.LicenseMode.Concurrent)
                 {
                     WriteMessage("\n[SDK] Concurrent режим — получаем сессию...");
-                    var session = await GrossGeoLicense.AcquireSessionAsync(Environment.MachineName);
+                    var session = await License.AcquireSessionAsync(Environment.MachineName);
 
                     if (session.IsSuccess)
                     {
@@ -147,17 +144,17 @@ namespace TestProduct.Concurrent
 
             // Модель лицензирования
             sb.AppendLine("║  License Model:                                                ║");
-            sb.AppendLine($"║    PlanTier:       {_license?.PlanTier,-39} ║");
-            sb.AppendLine($"║    BillingModel:   {_license?.BillingModel,-39} ║");
-            sb.AppendLine($"║    LicenseMode:    {_license?.LicenseMode,-39} ║");
-            sb.AppendLine($"║    IsValid:        {_license?.IsValid,-39} ║");
+            sb.AppendLine($"║    PlanTier:       {License.PlanTier,-39} ║");
+            sb.AppendLine($"║    BillingModel:   {License.BillingModel,-39} ║");
+            sb.AppendLine($"║    LicenseMode:    {License.LicenseMode,-39} ║");
+            sb.AppendLine($"║    IsValid:        {License.IsValid,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 
             // Concurrent session
             sb.AppendLine("║  Concurrent Session:                                          ║");
-            sb.AppendLine($"║    HasSession:     {_license?.HasActiveSession,-39} ║");
-            sb.AppendLine($"║    SessionToken:   {Truncate(_license?.SessionToken ?? "N/A", 39),-39} ║");
-            sb.AppendLine($"║    ExpiresAt:      {_license?.SessionExpiresAt?.ToString("HH:mm:ss") ?? "N/A",-39} ║");
+            sb.AppendLine($"║    HasSession:     {License.HasActiveSession,-39} ║");
+            sb.AppendLine($"║    SessionToken:   {Truncate(License.SessionToken ?? "N/A", 39),-39} ║");
+            sb.AppendLine($"║    ExpiresAt:      {License.SessionExpiresAt?.ToString("HH:mm:ss") ?? "N/A",-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 
             // Features
@@ -165,16 +162,16 @@ namespace TestProduct.Concurrent
             var featuresToCheck = new[] { "view-objects", "basic-tools", "pro-tools", "export-batch", "enterprise-api", "cloud-sync" };
             foreach (var f in featuresToCheck)
             {
-                var has = _license?.HasFeature(f);
-                var suffix = has == true ? "" : " [🔒]";
-                var icon = has == true ? "✅" : "❌";
+                var has = License.HasFeature(f);
+                var suffix = has ? "" : " [🔒]";
+                var icon = has ? "✅" : "❌";
                 sb.AppendLine($"║    {icon} {f,-20}{suffix,-32} ║");
             }
 
             // Limits
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
             sb.AppendLine("║  Feature Limits:                                              ║");
-            var batchLimit = _license?.GetFeatureLimit("export-batch", "maxPerCall");
+            var batchLimit = License.GetFeatureLimit("export-batch", "maxPerCall");
             sb.AppendLine($"║    export-batch.maxPerCall: {(batchLimit.HasValue ? batchLimit.Value.ToString() : "∞"),-31} ║");
 
             sb.AppendLine("╚══════════════════════════════════════════════════════════════╝");
@@ -192,17 +189,17 @@ namespace TestProduct.Concurrent
         public async void SessionCommand()
         {
             WriteMessage("\n═══ Concurrent Session Management ═══");
-            WriteMessage($"Текущий LicenseMode: {_license?.LicenseMode}");
-            WriteMessage($"HasActiveSession:    {_license?.HasActiveSession}");
+            WriteMessage($"Текущий LicenseMode: {License.LicenseMode}");
+            WriteMessage($"HasActiveSession:    {License.HasActiveSession}");
 
-            if ((_license?.HasActiveSession ?? false))
+            if (License.HasActiveSession)
             {
                 WriteMessage($"\n[Сессия активна]");
-                WriteMessage($"  Token:     {Truncate(_license?.SessionToken ?? "", 20)}");
-                WriteMessage($"  ExpiresAt: {_license?.SessionExpiresAt?.ToString("HH:mm:ss") ?? "N/A"}");
+                WriteMessage($"  Token:     {Truncate(License.SessionToken ?? "", 20)}");
+                WriteMessage($"  ExpiresAt: {License.SessionExpiresAt?.ToString("HH:mm:ss") ?? "N/A"}");
 
                 WriteMessage("\n  Отправляем heartbeat...");
-                var heartbeatOk = await GrossGeoLicense.SendSessionHeartbeatAsync();
+                var heartbeatOk = await License.SendSessionHeartbeatAsync();
                 WriteMessage($"  Heartbeat: {(heartbeatOk ? "✅ OK" : "❌ Failed")}");
 
                 WriteMessage("\n  Для освобождения сессии используйте GGCONCSESSIONRELEASE");
@@ -212,7 +209,7 @@ namespace TestProduct.Concurrent
                 WriteMessage("\n[Нет активной сессии]");
                 WriteMessage("  Попытка получить сессию...");
 
-                var result = await GrossGeoLicense.AcquireSessionAsync(Environment.MachineName);
+                var result = await License.AcquireSessionAsync(Environment.MachineName);
 
                 if (result.IsSuccess)
                 {
@@ -239,14 +236,14 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCSESSIONRELEASE")]
         public async void SessionReleaseCommand()
         {
-            if (!(_license?.HasActiveSession ?? false))
+            if (!License.HasActiveSession)
             {
                 WriteMessage("\n[GGCONCSESSIONRELEASE] Нет активной сессии для освобождения.");
                 return;
             }
 
             WriteMessage("\n[GGCONCSESSIONRELEASE] Освобождение сессии...");
-            await GrossGeoLicense.ReleaseSessionAsync();
+            await License.ReleaseSessionAsync();
             WriteMessage("[GGCONCSESSIONRELEASE] ✅ Сессия освобождена. Слот доступен другим.");
         }
 
@@ -264,7 +261,7 @@ namespace TestProduct.Concurrent
             WriteMessage("Default-фичи доступны во всех планах (включая Free):\n");
 
             // view-objects — IsDefault=true
-            _license?.RequireFeature("view-objects",
+            License.RequireFeature("view-objects",
                 action: () =>
                 {
                     WriteMessage("  ✅ [view-objects] Просмотр объектов — DEFAULT фича");
@@ -277,7 +274,7 @@ namespace TestProduct.Concurrent
             );
 
             // basic-tools — IsDefault=true (только авторизованные)
-            _license?.RequireFeature("basic-tools",
+            License.RequireFeature("basic-tools",
                 action: () =>
                 {
                     WriteMessage("  ✅ [basic-tools] Базовые инструменты — DEFAULT фича");
@@ -290,7 +287,7 @@ namespace TestProduct.Concurrent
             );
 
             // enterprise-api — только Pro+
-            _license?.RequireFeature("enterprise-api",
+            License.RequireFeature("enterprise-api",
                 action: () =>
                 {
                     WriteMessage("  ✅ [enterprise-api] Enterprise API — PRO+ фича");
@@ -312,13 +309,13 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCPRO")]
         public void ProToolsCommand()
         {
-            _license?.RequireFeature("pro-tools",
+            License.RequireFeature("pro-tools",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  🔧 GGCONCPRO — Pro инструменты        ║");
                     WriteMessage("╚════════════════════════════════════════╝");
-                    WriteMessage($"PlanTier: {_license?.PlanTier}");
+                    WriteMessage($"PlanTier: {License.PlanTier}");
                     WriteMessage("Pro инструменты выполнены успешно!");
                 },
                 onMissing: () =>
@@ -335,7 +332,7 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCBATCH")]
         public void BatchExportCommand()
         {
-            _license?.RequireFeature("export-batch",
+            License.RequireFeature("export-batch",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -345,22 +342,19 @@ namespace TestProduct.Concurrent
 
                     // Симуляция: пользователь выбрал 75 объектов
                     var objectCount = 75;
-                    var limit = _license?.GetFeatureLimit("export-batch", "maxPerCall");
+                    var limit = License.GetFeatureLimit("export-batch", "maxPerCall");
 
                     WriteMessage($"Объектов выбрано: {objectCount}");
                     WriteMessage($"Лимит maxPerCall: {(limit.HasValue ? limit.Value.ToString() : "∞ (безлимит)")}");
 
-                    // RequireLimitOrThrow — жёсткая проверка
-                    try
+                    if (License.CheckLimit("export-batch", "maxPerCall", objectCount))
                     {
-                        GrossGeoLicense.RequireLimitOrThrow("export-batch", "maxPerCall", objectCount);
                         WriteMessage($"✅ Лимит не превышен — экспорт {objectCount} объектов...");
                         WriteMessage("Экспорт завершён успешно!");
                     }
-                    catch (LimitExceededException ex)
+                    else
                     {
-                        WriteMessage($"❌ LimitExceededException: {ex.FeatureCode}.{ex.LimitCode}");
-                        WriteMessage($"   Лимит: {ex.Limit}, запрошено: {ex.ActualValue}");
+                        WriteMessage($"❌ Лимит превышен: {objectCount} > {limit}");
                         WriteMessage("   Обновитесь до Pro+ для увеличенных лимитов.");
                     }
                 },
@@ -384,7 +378,7 @@ namespace TestProduct.Concurrent
         {
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ Feature Limits Overview ═══");
-            sb.AppendLine($"PlanTier: {_license?.PlanTier}");
+            sb.AppendLine($"PlanTier: {License.PlanTier}");
 
             sb.AppendLine("\n[GetFeatureLimit]");
             var limitPairs = new[]
@@ -396,17 +390,17 @@ namespace TestProduct.Concurrent
 
             foreach (var (feature, limit) in limitPairs)
             {
-                var val = _license?.GetFeatureLimit(feature, limit);
+                var val = License.GetFeatureLimit(feature, limit);
                 sb.AppendLine($"  {feature}.{limit}: {(val.HasValue ? val.Value.ToString() : "∞")}");
             }
 
             sb.AppendLine("\n[CheckLimit Examples]");
-            sb.AppendLine($"  CheckLimit(export-batch, maxPerCall, 10):   {(_license?.CheckLimit("export-batch", "maxPerCall", 10) == true ? "✅ OK" : "❌ Exceeded")}");
-            sb.AppendLine($"  CheckLimit(export-batch, maxPerCall, 500):  {(_license?.CheckLimit("export-batch", "maxPerCall", 500) == true ? "✅ OK" : "❌ Exceeded")}");
-            sb.AppendLine($"  CheckLimit(export-batch, maxPerCall, 5000): {(_license?.CheckLimit("export-batch", "maxPerCall", 5000) == true ? "✅ OK" : "❌ Exceeded")}");
+            sb.AppendLine($"  CheckLimit(export-batch, maxPerCall, 10):   {(License.CheckLimit("export-batch", "maxPerCall", 10) ? "✅ OK" : "❌ Exceeded")}");
+            sb.AppendLine($"  CheckLimit(export-batch, maxPerCall, 500):  {(License.CheckLimit("export-batch", "maxPerCall", 500) ? "✅ OK" : "❌ Exceeded")}");
+            sb.AppendLine($"  CheckLimit(export-batch, maxPerCall, 5000): {(License.CheckLimit("export-batch", "maxPerCall", 5000) ? "✅ OK" : "❌ Exceeded")}");
 
             // Показываем все лимиты
-            var allLimits = _license?.FeatureLimits;
+            var allLimits = License.FeatureLimits;
             if (allLimits != null && allLimits.Count > 0)
             {
                 sb.AppendLine("\n[All FeatureLimits]");

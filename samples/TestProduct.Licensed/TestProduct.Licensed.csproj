@@ -1,49 +1,35 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- TODO: Добавить net48 когда AutoCAD 2024 будет установлен -->
-    <TargetFrameworks>net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
     <RootNamespace>TestProduct.Licensed</RootNamespace>
     <AssemblyName>TestProduct.Licensed</AssemblyName>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    
+
     <!-- Product Info -->
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Licensed</Product>
-    <Description>Тестовый продукт для проверки платформы дистрибуции GrossGeo с полным SDK (лицензирование)</Description>
-    
+    <Description>РўРµСЃС‚РѕРІС‹Р№ РїСЂРѕРґСѓРєС‚ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїР»Р°С‚С„РѕСЂРјС‹ РґРёСЃС‚СЂРёР±СѓС†РёРё GrossGeo СЃ РїРѕР»РЅС‹Рј SDK (Р»РёС†РµРЅР·РёСЂРѕРІР°РЅРёРµ)</Description>
+
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- GrossGeo SDK.Stub from NuGet (GrossGeo.Contracts types are embedded in the package). -->
+  <!-- GrossGeo SDK.Stub Reference (NuGet Package) -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.6" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.8" />
   </ItemGroup>
 
-  <!-- AutoCAD References for .NET Framework 4.8 (AutoCAD 2019-2024) -->
+  <!-- AutoCAD References for .NET Framework 4.8 (AutoCAD 2019-2024) via NuGet -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <Reference Include="accoremgd">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2024\accoremgd.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="acdbmgd">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2024\acdbmgd.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="acmgd">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2024\acmgd.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="AdWindows">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2024\AdWindows.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <PackageReference Include="AutoCAD.NET" Version="24.3.0" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Core" Version="24.3.0" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Model" Version="24.3.0" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->
@@ -65,5 +51,11 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+
+  <!-- Build Configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
 
 </Project>

@@ -3,8 +3,8 @@
 Тестовые AutoCAD-плагины, демонстрирующие разные модели лицензирования GrossGeo Platform
 через NuGet-пакет [`GrossGeo.SDK.Stub`](https://www.nuget.org/packages/GrossGeo.SDK.Stub).
 
-> **SDK 2.1.6:** Все примеры подключают SDK как `<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.6" />`
-> и используют паттерн `ProductLicenseAccessor` для корректной работы нескольких плагинов
+> Примеры подключают SDK из NuGet; **актуальная версия закреплена в [README пакета](../README.md)**.
+> Все они используют паттерн `ProductLicenseAccessor` для корректной работы нескольких плагинов
 > в одном процессе AutoCAD. См. [Multi-plugin](../README.md#multi-plugin-несколько-плагинов-в-одном-процессе).
 
 ## Продукты

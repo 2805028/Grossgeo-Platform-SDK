@@ -1,6 +1,6 @@
 // =====================================================================
 // TestProduct.Freemium — Бесплатный базовый + PRO фичи по подписке
-// Демонстрация: Freemium, Feature Limits, PlanTier, BillingModel
+// Демонстрация: Freemium, Feature Limits, Usage Tracking (v3)
 // =====================================================================
 
 using System;
@@ -22,13 +22,12 @@ namespace TestProduct.Freemium
     /// </summary>
     public class TestFreemiumPlugin : IExtensionApplication
     {
-        // API Key из DbSeeder.FreemiumPluginId
-        private const string ProductKey = "GG-FB8E-E1E2-0918-C769";
+        // Демонстрационный ProductKey. Для своего продукта возьмите ключ в Developer Portal.
+        private const string ProductKey = "GG-D7E6-51E3-D5AF-1E11";
         private const string PluginVersion = "1.1.0";
 
+        private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(ProductKey);
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
-
-        private static ProductLicenseAccessor? _license;
 
         #region IExtensionApplication
 
@@ -71,8 +70,6 @@ namespace TestProduct.Freemium
                     GracePeriodDays = 7
                 });
 
-                _license = GrossGeoLicense.ForProduct(ProductKey);
-
                 WriteMessage($"\n[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
                 WriteMessage($"      - PlanTier: {result.PlanTier}");
@@ -88,7 +85,8 @@ namespace TestProduct.Freemium
                 WriteMessage($"\n[SDK] ✅ Плагин готов к работе!");
                 WriteMessage($"[SDK] Бесплатные команды: GGFMBASIC, GGFMEXPORT");
                 WriteMessage($"[SDK] PRO команды: GGFMADVANCED, GGFMBATCH, GGFMCLOUD");
-                WriteMessage($"[SDK] Инфо: GGFMINFO, GGFMUPGRADE");
+                WriteMessage($"[SDK] Usage (v3): GGFMUSAGE, GGFMUSAGEREPORT");
+                WriteMessage($"[SDK] Инфо: GGFMINFO, GGFMLIMITS, GGFMREFRESH, GGFMUPGRADE");
             }
             catch (System.Exception ex)
             {
@@ -110,8 +108,7 @@ namespace TestProduct.Freemium
             try
             {
                 WriteMessage("\n[SDK] Обновление данных лицензии...");
-                var lic = _license ?? GrossGeoLicense.ForProduct(ProductKey);
-                var result = await lic.RefreshAsync();
+                var result = await License.RefreshAsync();
                 
                 WriteMessage($"[SDK] Статус: {result.Status}");
                 WriteMessage($"[SDK] План: {result.PlanTier}");
@@ -136,28 +133,28 @@ namespace TestProduct.Freemium
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ Freemium Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
-            sb.AppendLine($"PlanTier:       {_license?.PlanTier}");
-            sb.AppendLine($"BillingModel:   {_license?.BillingModel}");
-            sb.AppendLine($"LicenseMode:    {_license?.LicenseMode}");
+            sb.AppendLine($"PlanTier:       {License.PlanTier}");
+            sb.AppendLine($"BillingModel:   {License.BillingModel}");
+            sb.AppendLine($"LicenseMode:    {License.LicenseMode}");
 
             sb.AppendLine("\n═══ Free Tier Features ═══");
-            sb.AppendLine($"basic-tools:    {(_license?.HasFeature("basic-tools") == true ? "✅" : "❌")}");
-            sb.AppendLine($"simple-export:  {(_license?.HasFeature("simple-export") == true ? "✅" : "❌")}");
+            sb.AppendLine($"basic-tools:    {(License.HasFeature("basic-tools") ? "✅" : "❌")}");
+            sb.AppendLine($"simple-export:  {(License.HasFeature("simple-export") ? "✅" : "❌")}");
 
             sb.AppendLine("\n═══ PRO Features ═══");
-            sb.AppendLine($"advanced-tools:    {(_license?.HasFeature("advanced-tools") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
-            sb.AppendLine($"batch-processing:  {(_license?.HasFeature("batch-processing") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
-            sb.AppendLine($"cloud-sync:        {(_license?.HasFeature("cloud-sync") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
-            sb.AppendLine($"priority-support:  {(_license?.HasFeature("priority-support") == true ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"advanced-tools:    {(License.HasFeature("advanced-tools") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"batch-processing:  {(License.HasFeature("batch-processing") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"cloud-sync:        {(License.HasFeature("cloud-sync") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
+            sb.AppendLine($"priority-support:  {(License.HasFeature("priority-support") ? "✅ (PRO)" : "🔒 Требуется PRO")}");
 
             // Feature Limits
             sb.AppendLine("\n═══ Feature Limits ═══");
-            var batchLimit = _license?.GetFeatureLimit("batch-processing", "maxPerCall");
-            var exportSizeLimit = _license?.GetFeatureLimit("simple-export", "maxSize");
+            var batchLimit = License.GetFeatureLimit("batch-processing", "maxPerCall");
+            var exportSizeLimit = License.GetFeatureLimit("simple-export", "maxSize");
             sb.AppendLine($"batch-processing.maxPerCall: {(batchLimit.HasValue ? batchLimit.Value.ToString() : "безлимитно")}");
             sb.AppendLine($"simple-export.maxSize:       {(exportSizeLimit.HasValue ? $"{exportSizeLimit.Value} bytes" : "безлимитно")}");
 
-            var isPro = _license?.HasFeature("advanced-tools") == true;
+            var isPro = License.HasFeature("advanced-tools");
             sb.AppendLine($"\n💡 Статус: {(isPro ? "PRO пользователь" : "Free Tier")}");
 
             WriteMessage(sb.ToString());
@@ -170,7 +167,7 @@ namespace TestProduct.Freemium
         public void BasicToolsCommand()
         {
             // Проверяем default feature (всегда доступна для FREEMIUM)
-            _license?.RequireFeature("basic-tools",
+            License.RequireFeature("basic-tools",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -194,7 +191,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMEXPORT")]
         public void SimpleExportCommand()
         {
-            _license?.RequireFeature("simple-export",
+            License.RequireFeature("simple-export",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -204,7 +201,7 @@ namespace TestProduct.Freemium
                     WriteMessage("Экспорт в базовом формате выполнен!");
 
                     // Upsell
-                    if (_license?.HasFeature("advanced-tools") != true)
+                    if (!License.HasFeature("advanced-tools"))
                     {
                         WriteMessage("\n💡 Совет: Обновитесь до PRO для расширенных форматов!");
                         WriteMessage("   Используйте команду GGFMUPGRADE");
@@ -223,7 +220,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMUPGRADE")]
         public void UpgradeCommand()
         {
-            if (_license?.HasFeature("advanced-tools") == true)
+            if (License.HasFeature("advanced-tools"))
             {
                 WriteMessage("\n✅ Вы уже PRO пользователь!");
                 WriteMessage("Все функции доступны.");
@@ -256,7 +253,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMADVANCED")]
         public void AdvancedToolsCommand()
         {
-            _license?.RequireFeature("advanced-tools",
+            License.RequireFeature("advanced-tools",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -280,7 +277,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMBATCH")]
         public void BatchCommand()
         {
-            _license?.RequireFeature("batch-processing",
+            License.RequireFeature("batch-processing",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -290,13 +287,13 @@ namespace TestProduct.Freemium
 
                     // Проверяем лимит через SDK
                     var objectCount = 50; // Симуляция: выбрано 50 объектов
-                    var limit = _license?.GetFeatureLimit("batch-processing", "maxPerCall");
+                    var limit = License.GetFeatureLimit("batch-processing", "maxPerCall");
 
                     WriteMessage($"Выбрано объектов: {objectCount}");
                     WriteMessage($"Лимит maxPerCall: {(limit.HasValue ? limit.Value.ToString() : "безлимитно")}");
 
                     // Проверка через RequireLimit
-                    _license?.RequireLimit(
+                    License.RequireLimit(
                         "batch-processing", "maxPerCall", objectCount,
                         action: () =>
                         {
@@ -337,19 +334,19 @@ namespace TestProduct.Freemium
 
             foreach (var (feature, limit) in limitCodes)
             {
-                var value = _license?.GetFeatureLimit(feature, limit);
+                var value = License.GetFeatureLimit(feature, limit);
                 sb.AppendLine($"  {feature}.{limit}: {(value.HasValue ? value.Value.ToString() : "null (безлимитно)")}");
             }
 
             // Проверка CheckLimit
             sb.AppendLine("\n═══ CheckLimit Examples ═══");
-            var check1 = _license?.CheckLimit("batch-processing", "maxPerCall", 5);
-            var check2 = _license?.CheckLimit("batch-processing", "maxPerCall", 500);
-            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 5):   {(check1 == true ? "✅ OK" : "❌ Exceeded")}");
-            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 500): {(check2 == true ? "✅ OK" : "❌ Exceeded")}");
+            var check1 = License.CheckLimit("batch-processing", "maxPerCall", 5);
+            var check2 = License.CheckLimit("batch-processing", "maxPerCall", 500);
+            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 5):   {(check1 ? "✅ OK" : "❌ Exceeded")}");
+            sb.AppendLine($"  CheckLimit(batch, maxPerCall, 500): {(check2 ? "✅ OK" : "❌ Exceeded")}");
 
             // FeatureLimits словарь
-            var allLimits = _license?.FeatureLimits;
+            var allLimits = License.FeatureLimits;
             if (allLimits != null && allLimits.Count > 0)
             {
                 sb.AppendLine("\n═══ All FeatureLimits (raw) ═══");
@@ -372,7 +369,7 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMCLOUD")]
         public void CloudSyncCommand()
         {
-            _license?.RequireFeature("cloud-sync",
+            License.RequireFeature("cloud-sync",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -388,6 +385,117 @@ namespace TestProduct.Freemium
                     WriteMessage("Free Tier: настройки хранятся локально");
                 }
             );
+        }
+
+        #endregion
+
+        #region Commands — Usage Tracking (v3)
+
+        /// <summary>
+        /// v3: Демонстрация Usage Tracking — IncrementUsageAsync / GetCurrentUsageAsync.
+        /// Подсчёт операций для лимитов MaxPerDay/MaxPerMonth.
+        /// </summary>
+        [CommandMethod("GGFMUSAGE")]
+        public async void UsageTrackingCommand()
+        {
+            try
+            {
+                WriteMessage("\n═══ Usage Tracking Demo (v3) ═══");
+
+                // 1. Получаем текущий usage до операции
+                var currentUsage = await GrossGeoLicense.GetCurrentUsageAsync("batch-processing", "maxPerDay");
+                var dailyLimit = License.GetFeatureLimit("batch-processing", "maxPerDay");
+
+                WriteMessage($"[Usage] Текущий usage (maxPerDay): {currentUsage}");
+                WriteMessage($"[Usage] Дневной лимит:             {(dailyLimit.HasValue ? dailyLimit.Value.ToString() : "безлимитно")}");
+
+                // 2. Проверяем лимит до операции
+                if (dailyLimit.HasValue && currentUsage >= dailyLimit.Value)
+                {
+                    WriteMessage($"\n❌ Дневной лимит исчерпан ({currentUsage}/{dailyLimit.Value})");
+                    WriteMessage("   Лимит сбросится в 00:00 UTC.");
+                    WriteMessage("   Обновитесь до PRO для безлимитного доступа: GGFMUPGRADE");
+                    return;
+                }
+
+                // 3. Выполняем операцию
+                WriteMessage("\n[Usage] Выполнение операции пакетной обработки...");
+                var objectsProcessed = 5;
+
+                // 4. Инкрементируем usage после успешной операции
+                var result = await License.IncrementUsageAsync("batch-processing", "maxPerDay", objectsProcessed);
+
+                if (result.IsSuccess)
+                {
+                    WriteMessage($"✅ Обработано: {objectsProcessed} объектов");
+                    WriteMessage($"   Текущий usage:  {result.CurrentUsage}");
+
+                    if (result.Limit.HasValue)
+                    {
+                        WriteMessage($"   Лимит:          {result.Limit.Value}");
+                        WriteMessage($"   Осталось:       {result.Remaining ?? (result.Limit.Value - result.CurrentUsage)}");
+                    }
+                    else
+                    {
+                        WriteMessage($"   Лимит:          безлимитно");
+                    }
+                }
+                else
+                {
+                    WriteMessage($"⚠️ Ошибка учёта: {result.ErrorCode} — {result.ErrorMessage}");
+                    WriteMessage("   Операция выполнена, но usage не обновлён.");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                WriteMessage($"\n❌ Ошибка: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// v3: Отчёт по использованию — текущий usage для всех отслеживаемых лимитов.
+        /// </summary>
+        [CommandMethod("GGFMUSAGEREPORT")]
+        public async void UsageReportCommand()
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("\n═══ Usage Report (v3) ═══");
+                sb.AppendLine($"PlanTier: {License.PlanTier}");
+
+                var limitsToTrack = new[]
+                {
+                    ("batch-processing", "maxPerDay",     "Пакетная/день"),
+                    ("batch-processing", "maxPerSession", "Пакетная/сессия"),
+                    ("simple-export",    "maxPerCall",    "Экспорт/вызов"),
+                };
+
+                sb.AppendLine("\n[Текущий usage]");
+                foreach (var (feature, limit, label) in limitsToTrack)
+                {
+                    var usage = await GrossGeoLicense.GetCurrentUsageAsync(feature, limit);
+                    var maxVal = License.GetFeatureLimit(feature, limit);
+
+                    var maxStr = maxVal.HasValue ? maxVal.Value.ToString() : "∞";
+                    var bar = maxVal.HasValue && maxVal.Value > 0
+                        ? $" ({usage * 100 / maxVal.Value}%)"
+                        : "";
+
+                    sb.AppendLine($"  {label,-22} {usage,5} / {maxStr,5}{bar}");
+                }
+
+                sb.AppendLine("\nv3: Usage сбрасывается автоматически:");
+                sb.AppendLine("  • MaxPerDay  — в 00:00 UTC");
+                sb.AppendLine("  • MaxPerMonth — 1-го числа");
+                sb.AppendLine("  • PRO план = без ограничений");
+
+                WriteMessage(sb.ToString());
+            }
+            catch (System.Exception ex)
+            {
+                WriteMessage($"\n❌ Ошибка: {ex.Message}");
+            }
         }
 
         #endregion

@@ -22,13 +22,12 @@ namespace TestProduct.Free
     /// </summary>
     public class TestFreePlugin : IExtensionApplication
     {
-        // API Key из DbSeeder.FreePluginId
-        private const string ProductKey = "GG-974A-E898-5FBB-66FF";
+        // Демонстрационный ProductKey. Для своего продукта возьмите ключ в Developer Portal.
+        private const string ProductKey = "GG-3E5C-05AD-8F1C-63AE";
         private const string PluginVersion = "1.0.0";
 
+        private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(ProductKey);
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
-
-        private static ProductLicenseAccessor? _license;
 
         #region IExtensionApplication
 
@@ -67,8 +66,6 @@ namespace TestProduct.Free
                     PluginVersion = PluginVersion,
                     GracePeriodDays = 7
                 });
-
-                _license = GrossGeoLicense.ForProduct(ProductKey);
 
                 WriteMessage($"[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
@@ -118,20 +115,20 @@ namespace TestProduct.Free
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ FREE Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
-            sb.AppendLine($"IsValid:        {_license?.IsValid}");
+            sb.AppendLine($"IsValid:        {License.IsValid}");
 
             // Свойства лицензии
             sb.AppendLine($"\n═══ License Model ═══");
-            sb.AppendLine($"PlanTier:       {_license?.PlanTier}");
-            sb.AppendLine($"BillingModel:   {_license?.BillingModel}");
-            sb.AppendLine($"LicenseMode:    {_license?.LicenseMode}");
+            sb.AppendLine($"PlanTier:       {License.PlanTier}");
+            sb.AppendLine($"BillingModel:   {License.BillingModel}");
+            sb.AppendLine($"LicenseMode:    {License.LicenseMode}");
 
             sb.AppendLine($"\n═══ Status ═══");
-            sb.AppendLine($"ExpiresAt:      {_license?.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
-            sb.AppendLine($"IsOfflineMode:  {_license?.IsOfflineMode}");
-            sb.AppendLine($"IsGracePeriod:  {_license?.IsInGracePeriod}");
+            sb.AppendLine($"ExpiresAt:      {License.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
+            sb.AppendLine($"IsOfflineMode:  {License.IsOfflineMode}");
+            sb.AppendLine($"IsGracePeriod:  {License.IsInGracePeriod}");
 
-            var features = _license?.Features ?? Array.Empty<string>();
+            var features = License.Features;
             sb.AppendLine($"\n═══ Features ═══");
             sb.AppendLine($"Count: {features.Count}");
             foreach (var f in features)
@@ -154,8 +151,8 @@ namespace TestProduct.Free
             var defaultFeatures = new[] { "view-objects", "basic-info" };
             foreach (var feature in defaultFeatures)
             {
-                var hasIt = _license?.HasFeature(feature);
-                var icon = hasIt == true ? "✅" : "❌";
+                var hasIt = License.HasFeature(feature);
+                var icon = hasIt ? "✅" : "❌";
                 WriteMessage($"  {icon} {feature}: HasFeature={hasIt}");
             }
 

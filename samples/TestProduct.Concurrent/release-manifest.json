@@ -7,7 +7,7 @@
   "changelog": "Первый релиз. Free/Pro/Pro+ планы, Concurrent сессии.",
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "Contents/TestProduct.Concurrent.dll",
-  "minAutoCADVersion": "R24.4",
+  "minAutoCADVersion": "R24.3",
   "maxAutoCADVersion": "R25.0",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],
