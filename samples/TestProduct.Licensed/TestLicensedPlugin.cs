@@ -11,6 +11,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using GrossGeo.SDK;
+using GrossGeo.Contracts.Licensing;
 
 [assembly: CommandClass(typeof(TestProduct.Licensed.TestLicensedPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.Licensed.TestLicensedPlugin))]
@@ -166,6 +167,16 @@ namespace TestProduct.Licensed
         [CommandMethod("TEST_PROTECTED_CMD")]
         public void ProtectedCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             WriteMessage("\n[TEST_PROTECTED_CMD] Выполнение защищённой команды...");
 
             var executed = License.Protect(
@@ -192,6 +203,16 @@ namespace TestProduct.Licensed
         [CommandMethod("TEST_FEATURE_CHECK")]
         public void CheckFeature()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             WriteMessage("\n[TEST_FEATURE_CHECK] Проверка feature flags...");
 
             var featuresToCheck = new[] { "export_pdf", "batch_processing", "premium_tools", "enterprise_api" };

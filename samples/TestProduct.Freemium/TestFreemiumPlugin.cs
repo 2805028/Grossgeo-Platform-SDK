@@ -10,6 +10,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using GrossGeo.SDK;
+using GrossGeo.Contracts.Licensing;
 
 [assembly: CommandClass(typeof(TestProduct.Freemium.TestFreemiumPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.Freemium.TestFreemiumPlugin))]
@@ -166,6 +167,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMBASIC")]
         public void BasicToolsCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             // Проверяем default feature (всегда доступна для FREEMIUM)
             License.RequireFeature("basic-tools",
                 action: () =>
@@ -191,6 +202,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMEXPORT")]
         public void SimpleExportCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             License.RequireFeature("simple-export",
                 action: () =>
                 {
@@ -220,6 +241,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMUPGRADE")]
         public void UpgradeCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             if (License.HasFeature("advanced-tools"))
             {
                 WriteMessage("\n✅ Вы уже PRO пользователь!");
@@ -253,6 +284,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMADVANCED")]
         public void AdvancedToolsCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             License.RequireFeature("advanced-tools",
                 action: () =>
                 {
@@ -277,6 +318,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMBATCH")]
         public void BatchCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             License.RequireFeature("batch-processing",
                 action: () =>
                 {
@@ -320,6 +371,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMLIMITS")]
         public void LimitsCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ Feature Limits Demo ═══");
 
@@ -369,6 +430,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMCLOUD")]
         public void CloudSyncCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             License.RequireFeature("cloud-sync",
                 action: () =>
                 {
@@ -398,6 +469,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMUSAGE")]
         public async void UsageTrackingCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             try
             {
                 WriteMessage("\n═══ Usage Tracking Demo (v3) ═══");
@@ -458,6 +539,16 @@ namespace TestProduct.Freemium
         [CommandMethod("GGFMUSAGEREPORT")]
         public async void UsageReportCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             try
             {
                 var sb = new StringBuilder();

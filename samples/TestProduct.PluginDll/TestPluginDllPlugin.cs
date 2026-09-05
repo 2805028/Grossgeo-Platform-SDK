@@ -10,6 +10,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using GrossGeo.SDK;
+using GrossGeo.Contracts.Licensing;
 
 [assembly: CommandClass(typeof(TestProduct.PluginDll.TestPluginDllPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.PluginDll.TestPluginDllPlugin))]
@@ -114,6 +115,16 @@ namespace TestProduct.PluginDll
         [CommandMethod("GGDLLTEST")]
         public void DllTestCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             LicenseGuard.Protect(
                 action: () =>
                 {
@@ -174,6 +185,16 @@ namespace TestProduct.PluginDll
         [CommandMethod("GGDLLREPORT")]
         public void DllReportCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             _license?.RequireFeature("reporting",
                 action: () =>
                 {

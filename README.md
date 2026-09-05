@@ -24,7 +24,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.8" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.15" />
 ```
 
 > Версия закрепляется точно, а не диапазоном. `2.*` разрешается в любую версию ветки 2 —
@@ -97,12 +97,29 @@ public class MyPlugin : IExtensionApplication
 [CommandMethod("MYCOMMAND")]
 public void MyCommand()
 {
+    // Дождитесь инициализации. Она идёт в фоне — иначе встанет загрузка AutoCAD, — и
+    // команду можно запустить раньше, чем появится вердикт. Без ожидания вы получите
+    // отказ, НЕОТЛИЧИМЫЙ от «лицензии нет», и покажете пользователю «купите» там,
+    // где надо было «подождите пару секунд».
+    var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+    if (ready.Status == LicenseCheckStatus.Unknown)
+    {
+        ShowMessage(ready.Message);   // «спросить не удалось» — это НЕ «прав нет»
+        return;
+    }
+
     License.Protect(
         action: () => DoWork(),
         onBlocked: () => ShowMessage("Требуется лицензия")
     );
 }
 ```
+
+> **Дождаться инициализации — обязательная половина приёма.** `Initialize` в фоне — верно;
+> спрашивать о правах, не дождавшись, — нет. `WaitUntilReady` для обычных команд,
+> `await WhenReadyAsync(...)` для `async`-обработчиков. Оба по истечении срока возвращают
+> `Status = Unknown` и `ErrorCode = NOT_CHECKED` — **явное «не спрашивали», а не отказ**.
+> Доступно с версии **2.1.15**.
 
 ---
 

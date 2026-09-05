@@ -11,6 +11,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using GrossGeo.SDK;
+using GrossGeo.Contracts.Licensing;
 
 [assembly: CommandClass(typeof(TestProduct.Subscription.TestSubscriptionPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.Subscription.TestSubscriptionPlugin))]
@@ -155,6 +156,16 @@ namespace TestProduct.Subscription
         [CommandMethod("GGSUBSTEST")]
         public async void TestCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             try
             {
                 await EnsureLicenseCurrentAsync();
@@ -190,6 +201,16 @@ namespace TestProduct.Subscription
         [CommandMethod("GGSUBSFEATURES")]
         public async void FeaturesCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             try
             {
                 await EnsureLicenseCurrentAsync();
@@ -233,6 +254,16 @@ namespace TestProduct.Subscription
         [CommandMethod("GGSUBSEXPORT")]
         public async void ExportCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             try
             {
                 await EnsureLicenseCurrentAsync();
@@ -290,6 +321,16 @@ namespace TestProduct.Subscription
         [CommandMethod("GGSUBSUSAGE")]
         public async void UsageReportCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             try
             {
                 var sb = new StringBuilder();
@@ -328,6 +369,16 @@ namespace TestProduct.Subscription
         [CommandMethod("GGSUBSBATCH")]
         public async void BatchCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             // Жёсткая защита - выбросит исключение
             var lic = License;
             try

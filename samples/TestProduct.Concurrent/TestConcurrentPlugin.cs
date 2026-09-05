@@ -11,6 +11,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using GrossGeo.SDK;
+using GrossGeo.Contracts.Licensing;
 
 [assembly: CommandClass(typeof(TestProduct.Concurrent.TestConcurrentPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.Concurrent.TestConcurrentPlugin))]
@@ -137,6 +138,16 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCINFO")]
         public void InfoCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
             sb.AppendLine("║          CONCURRENT TOOLKIT — Info                            ║");
@@ -257,6 +268,16 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCPUBLIC")]
         public void PublicFeaturesCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             WriteMessage("\n═══ Default Features Demo (IsDefault) ═══");
             WriteMessage("Default-фичи доступны во всех планах (включая Free):\n");
 
@@ -309,6 +330,16 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCPRO")]
         public void ProToolsCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             License.RequireFeature("pro-tools",
                 action: () =>
                 {
@@ -332,6 +363,16 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCBATCH")]
         public void BatchExportCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             License.RequireFeature("export-batch",
                 action: () =>
                 {
@@ -376,6 +417,16 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCLIMITS")]
         public void LimitsCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ Feature Limits Overview ═══");
             sb.AppendLine($"PlanTier: {License.PlanTier}");

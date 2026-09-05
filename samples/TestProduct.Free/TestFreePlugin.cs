@@ -10,6 +10,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using GrossGeo.SDK;
+using GrossGeo.Contracts.Licensing;
 
 [assembly: CommandClass(typeof(TestProduct.Free.TestFreePlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.Free.TestFreePlugin))]
@@ -145,6 +146,16 @@ namespace TestProduct.Free
         [CommandMethod("GGFREEPUBLIC")]
         public void PublicFeaturesCommand()
         {
+            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
+            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
+            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
+            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
+            if (ready.Status == LicenseCheckStatus.Unknown)
+            {
+                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
+                return;
+            }
+
             WriteMessage("\n═══ Default Features Demo (v3) ═══");
             WriteMessage("Фичи с IsDefault=true доступны во всех планах:");
 
