@@ -7,6 +7,169 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+**2.1.15 is prepared but not yet published to nuget.org.** When it is published, replace this
+heading with `## [2.1.15] - YYYY-MM-DD`. Until then the version below cannot be installed.
+
+### Fixed
+- **Usage was counted against the wrong product.** `ProductLicenseAccessor.IncrementUsageAsync`
+  and `GetCurrentUsageAsync` did not pass their own accessor's product key and fell back to the
+  key of the last `Initialize` call. In a host that runs several GrossGeo products — AutoCAD is
+  exactly that — a paid per-product limit stopped applying **silently**: the other plan has no
+  limit under that code, the platform answers "allowed, unlimited" and records nothing, so
+  `GetCurrentUsageAsync` kept returning zero and nothing appeared in any log. **Required for any
+  product that uses per-product usage limits via `GrossGeoLicense.ForProduct`.**
+
+### Changed
+- **A failed signing-key rotation is no longer indistinguishable from losing the network.** It
+  now says the platform sent a key this build of your product does not trust and that the
+  product must be updated, instead of degrading into the offline cache and then, once the cache
+  expires, into a plain refusal. **The list of trusted signing keys is unchanged** — products
+  built on 2.1.14 trust exactly the same keys, and nothing in the field starts refusing because
+  of this release.
+
+### Added
+- **`PlanTier.Unknown`, `BillingModel.Unknown` and `LicenseMode.Unknown` (all 255).** Until now,
+  when no verdict was available your product silently received `Free`, `Free` and `Machine`: the
+  absence of an answer looked exactly like an answer, and `Machine` is the most expensive of the
+  three modes by consequence. It now receives `Unknown`. Existing members keep their numbers and
+  nothing is removed — but **if you branch on any of these three enums, check that you have a
+  `default` arm**: code that previously always landed somewhere will now land nowhere.
+
+## [2.1.14] - 2026-09-03
+
+### Changed
+- **A withdrawn licence now stops on time — once you rebuild.** Until this release a refusal
+  grounded in a non-operational licence state (revoked, suspended, expired, blocked) arrived
+  carrying no error code at all. A refusal without a code is read by the SDK as a transient
+  failure, so it fell back to the last positive verdict in the signed offline cache and went on
+  serving it for as long as that cache remained valid — up to seven days. The refusal is now
+  named (`LICENSE_NOT_ACTIVE`) and treated as authoritative. **The set of codes treated as an
+  authoritative denial is compiled into the SDK inside your product**: updating the User Panel on
+  the end user's machine does not change this, because the decision is taken inside your own
+  assembly.
+- **Two `Status` values change.** `Check()` called before any check completed returned
+  `NotFound` with a message telling the user to activate a product they had already activated;
+  it now returns `Unknown` with `ErrorCode = NOT_CHECKED`. Failure to verify the signature of the
+  offline cache returned `Blocked`; it now returns `Unknown` with `SIGNATURE_INVALID`, through a
+  new factory `LicenseResult.CouldNotVerify`. `IsValid` stays `false` in both, so access is not
+  widened — what changes is truthfulness.
+- **An `ErrorCode` that used to arrive empty now arrives with a value.** Six places substituted a
+  fallback only when the code was `null`, while the panel sends an empty string — so the
+  substitution never fired. Those places now yield `UNKNOWN`. **If you compare an error code
+  against the empty string, that comparison will stop matching; compare against the value.**
+- **A status number this SDK does not recognise now maps to `Unknown`** instead of to whichever
+  name happened to carry that number.
+- **The SDK-side rate limiter reports `LOCAL_RATE_LIMITED`** instead of `RATE_LIMITED`: the
+  platform uses `RATE_LIMIT_EXCEEDED` for "we asked and were refused", while this one means "we
+  did not ask at all", and the two were one keystroke apart.
+
+### Added
+- **Four factories that previously left `ErrorCode` null now carry one**: `NotFound` →
+  `LICENSE_NOT_FOUND`, `Expired` → `LICENSE_EXPIRED`, `NoAvailableSeats` → `NO_SEATS`,
+  `NoAssignment` → `LICENSE_NOT_ASSIGNED`. `Success` and `GracePeriod` deliberately never carry
+  a code: both are valid states.
+- **Three cache-mismatch causes are now separate**, because the person in front of the screen has
+  to do something different in each: `CACHE_EXPIRED` (the stored copy aged out),
+  `CACHE_CLOCK_MISMATCH` (the machine clock is wrong — fixable in ten seconds),
+  `CACHE_BINDING_MISMATCH` (the stored licence belongs to another machine or another Windows
+  account — not fixable by the user).
+- **`Protect()` overloads that hand the refusal reason to the fallback** instead of nothing.
+- **`GrossGeo.Contracts.Licensing.IpcErrorCodes`** — the shared dictionary of error codes is now
+  a public type, in the `GrossGeo.Contracts` assembly that has always shipped inside this
+  package. It adds a type and removes nothing.
+
+### Note
+- **Nothing in this release changes the wire format, the fingerprint, or the cache file layout**,
+  so signed envelopes and existing cache files keep working, and no product needs rebuilding to
+  keep functioning. Rebuilding is what delivers the new codes — and what makes a withdrawn
+  licence stop on time.
+
+## [2.1.13] - 2026-08-29
+
+### Fixed
+- **On .NET Framework the SDK still did not reach the User Panel** — 2.1.12 fixed only half of
+  it. The package still depended on `System.Text.Json`, which on .NET Framework arrives with
+  eight companion assemblies whose versions are reconciled by binding redirects in the
+  application's configuration file. A plugin is a library loaded into someone else's process: the
+  configuration in force is the host's, and it is not ours to write. In AutoCAD the result was a
+  `TypeInitializationException` on `System.Text.Json.JsonSerializer`. This release removes the
+  dependency instead of arguing with it: on `net48` the SDK now serialises and parses the IPC
+  protocol with code of its own, and its assembly references are down to `mscorlib`, `System`,
+  `System.Core`, `System.Management` and `GrossGeo.Contracts`. The wire format is unchanged to
+  the character, verified against a reference captured from the running panel. On
+  `net8.0-windows` `System.Text.Json` is retained. **Required for AutoCAD 2019–2024.**
+
+## [2.1.12] - 2026-08-28
+
+### Fixed
+- **On .NET Framework the SDK did not initialise at all, and left no trace.** While hiding string
+  literals, the obfuscation step emitted a decryptor referencing `System.Private.CoreLib` — the
+  core library of the runtime the obfuscation tool itself runs on, which does not exist on .NET
+  Framework 4.8. The first touch of the SDK therefore threw a `TypeInitializationException`
+  before anything ran, including before the SDK could create its own diagnostic log: a product on
+  AutoCAD 2019–2024 simply never received a verdict and nothing anywhere said why. Products
+  targeting AutoCAD 2025 and later were unaffected. **Partial fix — superseded by 2.1.13.**
+
+## [2.1.11] - 2026-08-20
+
+### Fixed
+- **The offline relaxation shipped in 2.1.9 never fired, because it asked a question that cannot
+  be answered.** It tested whether the only difference between the stored and the current machine
+  fingerprint was the volatile component; the fingerprint is a hash, so its components cannot be
+  recovered from it — and disabling the network does not remove the MAC address at all: the SDK
+  picks the fastest working non-loopback interface, so a virtual adapter (Hyper-V, VMware,
+  VirtualBox, Bluetooth PAN, WSL) takes over and the MAC becomes *different* rather than absent.
+  The question is now the one that can be answered: is the machine identity measured, and does it
+  match exactly? Identity is four stable components — CPU, motherboard, machine GUID, volume
+  serial — and all four must match, with no scoring or threshold. **Required; supersedes 2.1.10.**
+
+### Changed
+- As a consequence the relaxation now applies to **any** MAC change, not only its disappearance:
+  docking, a VPN coming up, a replaced network card, a change in adapter order. That is
+  deliberate — the MAC is not a property of the machine, it is a property of whichever interface
+  happens to be fastest at that moment.
+
+## [2.1.10] - 2026-08-20
+
+*Publication date not established: taken from the day the fix landed. The version-history
+record in the package places this release on the same day as 2.1.8.*
+
+### Fixed
+- **The offline licence cache was being written empty in obfuscated builds.** The cache record
+  type carried no explicit JSON names and was not excluded from renaming, so obfuscation renamed
+  its properties and the record round-tripped to almost nothing — measured at 230 bytes against
+  1830 for the same licence written by a non-obfuscated build. Nothing reported an error: the
+  file was created, encrypted, decrypted and parsed successfully; it simply held no data. Every
+  offline mechanism that reads it therefore had nothing to lean on, including the relaxation
+  shipped in 2.1.9. **Required for offline to work at all; supersedes 2.1.9.**
+
+### Added
+- Three independent protections for that record: explicit JSON names on every field, exclusion of
+  the type from renaming, and a **round-trip self-check at write time** which reads the file back,
+  compares the payload length with what was stored, and logs `CACHE ROUND-TRIP BROKEN` with the
+  three numbers on any mismatch. The third holds even if the first two are defeated by a future
+  change — which is the point: this defect failed silently for months.
+
+## [2.1.9] - 2026-08-20
+
+*Publication date not established: taken from the day the fix landed. The version-history
+record in the package places this release on the same day as 2.1.8.*
+
+### Fixed
+- **Going offline no longer invalidates the offline licence.** The machine fingerprint included
+  the MAC address, which is only readable while a network adapter is up; disabling the network
+  turned it into `UNKNOWN_MAC`, the fingerprint changed, and an exact comparison then rejected a
+  genuinely signed, valid licence. The fallback to the on-disk cache could not save it either,
+  because the cache encryption key was derived from the same fingerprint. A product taken offline
+  therefore lost its licence at the moment it went offline, rather than at the end of the period
+  the platform had signed for. **Important for any product that must work offline.**
+
+### Added
+- **A separate stable fingerprint** (CPU, motherboard, machine GUID, volume serial — no MAC) from
+  which the cache key is derived. **The wire fingerprint sent to and signed by the platform is
+  unchanged**, so existing signed envelopes keep verifying.
+- Rejections now name the product they concern, so a diagnostic log can be attributed.
+
 ## [2.1.8] - 2026-08-20
 
 ### Added
