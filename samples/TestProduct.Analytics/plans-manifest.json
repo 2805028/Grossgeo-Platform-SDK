@@ -1,8 +1,0 @@
-{
-  "$schema": "https://grossgeo.example/schemas/plans-manifest.v1.json",
-  "manifestVersion": 1,
-
-  "plans": [],
-
-  "features": []
-}
