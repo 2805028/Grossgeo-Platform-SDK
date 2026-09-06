@@ -554,7 +554,7 @@ FeatureGuard.OrThrow("export", () => DoExport());
       "postInstallAction": "RequireRestart",
       "netloadDllPath": "Contents/MyPlugin.dll",
       "minAutoCADVersion": "R24.4",
-      "maxAutoCADVersion": "R25.0",
+      "maxAutoCADVersion": "R25.1",
       "targetPlatforms": ["AutoCAD", "Civil3D"],
       "supportedOS": ["Win64"],
       "loadOnStartup": true,
@@ -676,7 +676,7 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | `postInstallAction` | `string` | Действие: `RequireRestart`, `None` |
 | `netloadDllPath` | `string?` | Путь к DLL внутри bundle (для `Bundle`) |
 | `minAutoCADVersion` | `string` | Мин. серия AutoCAD (например, `R24.4`) |
-| `maxAutoCADVersion` | `string` | Макс. серия AutoCAD (например, `R25.0`) |
+| `maxAutoCADVersion` | `string` | Макс. серия AutoCAD (например, `R25.1`) |
 | `targetPlatforms` | `string[]` | Платформы: `AutoCAD`, `Civil3D`, `Map` |
 | `supportedOS` | `string[]` | ОС: `Win64` |
 | `loadOnStartup` | `bool` | Загружать при старте AutoCAD |

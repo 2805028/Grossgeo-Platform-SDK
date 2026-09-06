@@ -8,7 +8,7 @@
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "TestProduct.PluginDll.dll",
   "minAutoCADVersion": "R24.4",
-  "maxAutoCADVersion": "R25.0",
+  "maxAutoCADVersion": "R25.1",
   "targetPlatforms": ["AutoCAD"],
   "supportedOS": ["Win64"],
   "loadOnStartup": false

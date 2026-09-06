@@ -8,7 +8,7 @@
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "Contents/TestProduct.Analytics.dll",
   "minAutoCADVersion": "R24.4",
-  "maxAutoCADVersion": "R25.0",
+  "maxAutoCADVersion": "R25.1",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],
   "loadOnStartup": true
