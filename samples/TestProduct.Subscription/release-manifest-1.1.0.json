@@ -7,7 +7,7 @@
   "changelog": "Добавлен Yearly план, новая feature в Pro, MaxPerMonth limit для экспорта.",
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "Contents/TestProduct.Subscription.dll",
-  "minAutoCADVersion": "R24.4",
+  "minAutoCADVersion": "R25.0",
   "maxAutoCADVersion": "R25.1",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],

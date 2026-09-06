@@ -14,7 +14,7 @@
 |-----------|-------------|
 | **GrossGeo User Panel** | Установлен и запущен. [Скачать](https://grossgeo.ru/download) |
 | **AutoCAD 2019–2024** | .NET Framework 4.8 |
-| **AutoCAD 2025+** | .NET 8.0 |
+| **AutoCAD 2025–2026** | .NET 8.0 |
 
 > SDK общается с User Panel через Named Pipe IPC.
 > User Panel должен быть запущен — без него SDK работает в офлайн-режиме из кэша (до 7 дней).
@@ -36,7 +36,7 @@
 
 **Поддерживаемые TFM:**
 - `net48` — AutoCAD 2019–2024
-- `net8.0-windows` — AutoCAD 2025+
+- `net8.0-windows` — AutoCAD 2025–2026
 
 ---
 
@@ -97,29 +97,29 @@ public class MyPlugin : IExtensionApplication
 [CommandMethod("MYCOMMAND")]
 public void MyCommand()
 {
-    // Дождитесь инициализации. Она идёт в фоне — иначе встанет загрузка AutoCAD, — и
-    // команду можно запустить раньше, чем появится вердикт. Без ожидания вы получите
-    // отказ, НЕОТЛИЧИМЫЙ от «лицензии нет», и покажете пользователю «купите» там,
-    // где надо было «подождите пару секунд».
+    // Инициализация идёт в фоне (иначе загрузка AutoCAD встанет), и команду можно
+    // запустить раньше, чем она закончится. Дождитесь — иначе получите отказ,
+    // неотличимый от «лицензии нет», и покажете «купите» вместо «подождите».
     var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
     if (ready.Status == LicenseCheckStatus.Unknown)
     {
-        ShowMessage(ready.Message);   // «спросить не удалось» — это НЕ «прав нет»
+        ShowMessage(ready.Message);   // «спросить не удалось», а не «прав нет»
         return;
     }
 
     License.Protect(
         action: () => DoWork(),
-        onBlocked: () => ShowMessage("Требуется лицензия")
+        onBlocked: reason => ShowMessage(reason?.Status == LicenseCheckStatus.NetworkError
+            ? $"Проверить лицензию не удалось: {reason.Message}"
+            : "Требуется лицензия")
     );
 }
 ```
 
 > **Дождаться инициализации — обязательная половина приёма.** `Initialize` в фоне — верно;
 > спрашивать о правах, не дождавшись, — нет. `WaitUntilReady` для обычных команд,
-> `await WhenReadyAsync(...)` для `async`-обработчиков. Оба по истечении срока возвращают
+> `await WhenReadyAsync(...)` для `async`-обработчиков. Оба по истечении срока отдают
 > `Status = Unknown` и `ErrorCode = NOT_CHECKED` — **явное «не спрашивали», а не отказ**.
-> Доступно с версии **2.1.15**.
 
 ---
 
@@ -128,7 +128,26 @@ public void MyCommand()
 ### Три способа проверки лицензии
 
 ```csharp
-// 1. С fallback
+// 1. С fallback, знающим ПРИЧИНУ отказа
+License.Protect(
+    action: () => DoWork(),
+    onBlocked: reason =>
+    {
+        // «Спросить не удалось» — не «прав нет». Панель не запущена, канал молчит, бюджет
+        // исчерпан: право не отозвано, звать покупать нельзя.
+        if (reason?.Status == LicenseCheckStatus.NetworkError)
+        {
+            ShowMessage($"Проверить лицензию не удалось: {reason.Message}");
+            return;
+        }
+
+        ShowUpgradeDialog();
+    }
+);
+
+// 1a. Прежняя форма — без причины. Она осталась и работает, но обработчик в ней
+// НЕ МОЖЕТ отличить неподнятую панель от отсутствия лицензии и потому неизбежно
+// говорит одно и то же в обоих случаях.
 License.Protect(
     action: () => DoWork(),
     onBlocked: () => ShowUpgradeDialog()
@@ -553,7 +572,7 @@ FeatureGuard.OrThrow("export", () => DoExport());
       "distributionType": "Bundle",
       "postInstallAction": "RequireRestart",
       "netloadDllPath": "Contents/MyPlugin.dll",
-      "minAutoCADVersion": "R24.4",
+      "minAutoCADVersion": "R25.0",
       "maxAutoCADVersion": "R25.1",
       "targetPlatforms": ["AutoCAD", "Civil3D"],
       "supportedOS": ["Win64"],
@@ -675,10 +694,29 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | `distributionType` | `string` | Тип: `Bundle` (Autoloader) или `Installer` (EXE) |
 | `postInstallAction` | `string` | Действие: `RequireRestart`, `None` |
 | `netloadDllPath` | `string?` | Путь к DLL внутри bundle (для `Bundle`) |
-| `minAutoCADVersion` | `string` | Мин. серия AutoCAD (например, `R24.4`) |
-| `maxAutoCADVersion` | `string` | Макс. серия AutoCAD (например, `R25.1`) |
+| `minAutoCADVersion` | `string` | Мин. серия AutoCAD. **Обязана быть достижима вашей нагрузкой:** сборка под `net8` не грузится в AutoCAD 2024 и старше — там .NET Framework. Для `net8`-продукта нижняя граница `R25.0` (2025); `R24.3` (2024) и ниже честны только при наличии сборки под `net48` |
+| `maxAutoCADVersion` | `string?` | Макс. серия AutoCAD — **потолок вашего продукта**; сегодня `R25.1` (2026), см. врезку ниже |
 | `targetPlatforms` | `string[]` | Платформы: `AutoCAD`, `Civil3D`, `Map` |
 | `supportedOS` | `string[]` | ОС: `Win64` |
+
+> **Про `maxAutoCADVersion`: это ПОТОЛОК вашего продукта, и объявляете его вы.** Значение
+> доезжает до AutoCAD как `SeriesMax` в манифесте бандла, и AutoCAD отсекает по нему **строго**:
+> замер 03.09.2026 на одной машине — один бандл, различалась одна строка, с `R25.0` продукта в
+> AutoCAD 2026 нет, с `R25.1` есть. Поставите `R25.0` — продукт **не загрузится на 2026**, и
+> узнаете вы об этом не от нас.
+>
+> **Путей до `SeriesMax` два, и потолком ваше значение остаётся на обоих.** Если вы указали
+> `netloadDllPath` или `targetRuntimes`, панель пишет ваше значение в `SeriesMax` **дословно**.
+> Если не указали — она сама разбирает нагрузку по таргетам (`net8` → `R25.0–R25.9`,
+> `net48` → `R23.0–R24.3`) и **пересекает** свой диапазон с вашим, беря меньшее. Дословная запись
+> — путь большинства: она срабатывает всякий раз, когда `netloadDllPath` задан.
+>
+> **Сегодняшнее верное значение — `R25.1`, это AutoCAD 2026.** Выше него у платформы нет сборки:
+> `R25.1` — верхняя серия, под которую в нашем плагине существует таргет. Какая серия окажется у
+> следующей версии AutoCAD, мы не выводим формулой — пару «серия → год» назначает Autodesk
+> (см. `AutoCadSeries`), поэтому и вы не угадывайте: когда таргет появится, значение обновится
+> в этой документации.
+
 | `loadOnStartup` | `bool` | Загружать при старте AutoCAD |
 | `fixtureFile` | `string` | Путь к `.bundle.zip` файлу |
 

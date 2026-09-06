@@ -7,7 +7,7 @@
   "changelog": "Graduated limits, session timeout тест, MaxPerSession.",
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "Contents/TestProduct.Concurrent.dll",
-  "minAutoCADVersion": "R24.4",
+  "minAutoCADVersion": "R25.0",
   "maxAutoCADVersion": "R25.1",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],

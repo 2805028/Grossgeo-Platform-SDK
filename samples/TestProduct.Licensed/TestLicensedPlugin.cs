@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
-using GrossGeo.SDK;
 using GrossGeo.Contracts.Licensing;
+using GrossGeo.SDK;
 
 [assembly: CommandClass(typeof(TestProduct.Licensed.TestLicensedPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.Licensed.TestLicensedPlugin))]
@@ -90,6 +90,14 @@ namespace TestProduct.Licensed
                     }
 
                     WriteMessage("\n[SDK] ✅ Лицензия активна!");
+                }
+                else if (result.Status == LicenseCheckStatus.NetworkError)
+                {
+                    // LGC-671: спросить не удалось — это НЕ отказ в праве, и называть это
+                    // недействительной лицензией значит посылать человека покупать то, что у него есть.
+                    WriteMessage($"      - ErrorCode: {result.ErrorCode}");
+                    WriteMessage($"      - Message: {result.Message}");
+                    WriteMessage("\n[SDK] ⏳ Проверить лицензию не удалось — право не отозвано.");
                 }
                 else
                 {
@@ -187,9 +195,19 @@ namespace TestProduct.Licensed
                     WriteMessage($"[TEST_PROTECTED_CMD] BillingModel: {License.BillingModel}");
                     WriteMessage("[TEST_PROTECTED_CMD] 🎉 Команда выполнена!");
                 },
-                onBlocked: () =>
+                // LGC-671: обработчик получает ПРИЧИНУ. Прежде здесь стояло «Лицензия
+                // недействительна!» независимо от того, что случилось на самом деле, — и участник
+                // с оплаченной лицензией шёл её покупать, когда у него просто не поднялась панель.
+                onBlocked: reason =>
                 {
-                    WriteMessage("[TEST_PROTECTED_CMD] ❌ Лицензия недействительна!");
+                    if (reason?.Status == LicenseCheckStatus.NetworkError)
+                    {
+                        WriteMessage($"[TEST_PROTECTED_CMD] ⏳ Проверить лицензию не удалось: {reason.Message}");
+                        WriteMessage("[TEST_PROTECTED_CMD] Это не отказ в праве — повторите после запуска User Panel.");
+                        return;
+                    }
+
+                    WriteMessage($"[TEST_PROTECTED_CMD] ❌ {reason?.Message ?? "Лицензия недействительна"}");
                     WriteMessage("[TEST_PROTECTED_CMD] Установите User Panel и активируйте продукт.");
                 }
             );

@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- TODO: Р”РѕР±Р°РІРёС‚СЊ net48 РєРѕРіРґР° AutoCAD 2024 Р±СѓРґРµС‚ СѓСЃС‚Р°РЅРѕРІР»РµРЅ -->
+    <!-- TODO: Р вЂќР С•Р В±Р В°Р Р†Р С‘РЎвЂљРЎРЉ net48 Р С”Р С•Р С–Р Т‘Р В° AutoCAD 2024 Р В±РЎС“Р Т‘Р ВµРЎвЂљ РЎС“РЎРѓРЎвЂљР В°Р Р…Р С•Р Р†Р В»Р ВµР Р… -->
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
     <RootNamespace>TestProduct.Analytics</RootNamespace>
     <AssemblyName>TestProduct.Analytics</AssemblyName>
@@ -14,7 +14,7 @@
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Analytics</Product>
-    <Description>РўРµСЃС‚РѕРІС‹Р№ РїСЂРѕРґСѓРєС‚ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїР»Р°С‚С„РѕСЂРјС‹ РґРёСЃС‚СЂРёР±СѓС†РёРё GrossGeo СЃ SDK (Р°РЅР°Р»РёС‚РёРєР°)</Description>
+    <Description>Р СћР ВµРЎРѓРЎвЂљР С•Р Р†РЎвЂ№Р в„– Р С—РЎР‚Р С•Р Т‘РЎС“Р С”РЎвЂљ Р Т‘Р В»РЎРЏ Р С—РЎР‚Р С•Р Р†Р ВµРЎР‚Р С”Р С‘ Р С—Р В»Р В°РЎвЂљРЎвЂћР С•РЎР‚Р СРЎвЂ№ Р Т‘Р С‘РЎРѓРЎвЂљРЎР‚Р С‘Р В±РЎС“РЎвЂ Р С‘Р С‘ GrossGeo РЎРѓ SDK (Р В°Р Р…Р В°Р В»Р С‘РЎвЂљР С‘Р С”Р В°)</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>

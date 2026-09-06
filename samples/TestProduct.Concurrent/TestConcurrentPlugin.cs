@@ -138,16 +138,6 @@ namespace TestProduct.Concurrent
         [CommandMethod("GGCONCINFO")]
         public void InfoCommand()
         {
-            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
-            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
-            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
-            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
-            if (ready.Status == LicenseCheckStatus.Unknown)
-            {
-                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
-                return;
-            }
-
             var sb = new StringBuilder();
             sb.AppendLine("\n╔══════════════════════════════════════════════════════════════╗");
             sb.AppendLine("║          CONCURRENT TOOLKIT — Info                            ║");
@@ -158,6 +148,15 @@ namespace TestProduct.Concurrent
             sb.AppendLine($"║    PlanTier:       {License.PlanTier,-39} ║");
             sb.AppendLine($"║    BillingModel:   {License.BillingModel,-39} ║");
             sb.AppendLine($"║    LicenseMode:    {License.LicenseMode,-39} ║");
+            // LGC-565: строка стояла у четырёх сэмплов из пяти и отсутствовала здесь. Из-за
+            // этого приёмка сценария утверждала про ярлык, которого в выводе не бывает, —
+            // и отсутствие ярлыка неотличимо от «есть, но не то значение». Тест был красным с
+            // рождения, и не по причине, связанной с лицензированием.
+            //
+            // Ярлык именно "IsInitialized", как у Free и Freemium: у Licensed и ExternalOnly он
+            // называется "Initialized", и это расхождение раздаваемых образцов — само по себе
+            // дефект, а не мелочь. Здесь берётся та форма, которую читает оснастка.
+            sb.AppendLine($"║    IsInitialized:  {GrossGeoLicense.IsInitialized,-39} ║");
             sb.AppendLine($"║    IsValid:        {License.IsValid,-39} ║");
             sb.AppendLine("╠══════════════════════════════════════════════════════════════╣");
 

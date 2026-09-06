@@ -108,7 +108,7 @@ graceful degradation без запущенного User Panel.
 
 Проекты настроены на стандартные пути установки:
 
-- AutoCAD 2025+ (net8.0-windows): `C:\Program Files\Autodesk\AutoCAD 2025\`
+- AutoCAD 2025–2026 (net8.0-windows): `C:\Program Files\Autodesk\AutoCAD 2025\`
 - AutoCAD 2019–2024 (net48): `C:\Program Files\Autodesk\AutoCAD 2024\`
 
 Если пути отличаются — отредактируйте `<HintPath>` в соответствующих `.csproj`.

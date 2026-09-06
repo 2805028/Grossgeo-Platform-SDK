@@ -7,7 +7,7 @@
   "changelog": "Изменён MaxPerCall limit (5→10), добавлен MaxSize limit.",
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "Contents/TestProduct.Freemium.dll",
-  "minAutoCADVersion": "R24.4",
+  "minAutoCADVersion": "R25.0",
   "maxAutoCADVersion": "R25.1",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],

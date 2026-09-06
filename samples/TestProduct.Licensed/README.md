@@ -1,7 +1,7 @@
 # 💎 TestProduct.Licensed
 
 **Тип:** Perpetual лицензия + Maintenance аддон  
-**Multi-target:** net48 (AutoCAD 2021-2024) + net8.0-windows (AutoCAD 2025+)
+**Multi-target:** net48 (AutoCAD 2019–2024) + net8.0-windows (AutoCAD 2025–2026)
 
 ## 📋 Характеристики
 

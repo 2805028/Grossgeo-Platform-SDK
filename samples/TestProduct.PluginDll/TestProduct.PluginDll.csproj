@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
@@ -13,7 +13,7 @@
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product PluginDll</Product>
-    <Description>РўРµСЃС‚РѕРІС‹Р№ PluginDll РїСЂРѕРґСѓРєС‚ вЂ” РѕРґРёРЅРѕС‡РЅР°СЏ DLL Р±РµР· bundle</Description>
+    <Description>Р СћР ВµРЎРѓРЎвЂљР С•Р Р†РЎвЂ№Р в„– PluginDll Р С—РЎР‚Р С•Р Т‘РЎС“Р С”РЎвЂљ РІР‚вЂќ Р С•Р Т‘Р С‘Р Р…Р С•РЎвЂЎР Р…Р В°РЎРЏ DLL Р В±Р ВµР В· bundle</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>

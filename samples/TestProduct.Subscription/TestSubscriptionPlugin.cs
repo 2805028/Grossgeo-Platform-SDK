@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
-using GrossGeo.SDK;
 using GrossGeo.Contracts.Licensing;
+using GrossGeo.SDK;
 
 [assembly: CommandClass(typeof(TestProduct.Subscription.TestSubscriptionPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.Subscription.TestSubscriptionPlugin))]
@@ -180,12 +180,21 @@ namespace TestProduct.Subscription
                         WriteMessage($"Уровень плана: {License.PlanTier}");
                         WriteMessage("Базовая команда выполнена успешно!");
                     },
-                    onBlocked: () =>
+                    // LGC-671: причина доезжает до участника. Подписчику, у которого не
+                    // поднялась панель, предлагать оформить подписку — худшее из сообщений.
+                    onBlocked: reason =>
                     {
+                        if (reason?.Status == LicenseCheckStatus.NetworkError)
+                        {
+                            WriteMessage($"\n⏳ Проверить подписку не удалось: {reason.Message}");
+                            WriteMessage("Подписка не отменена — повторите после запуска User Panel.");
+                            return;
+                        }
+
                         WriteMessage("\n╔════════════════════════════════════════╗");
                         WriteMessage("║  ❌ Требуется лицензия                 ║");
                         WriteMessage("╚════════════════════════════════════════╝");
-                        WriteMessage("Запустите Trial или оформите подписку.");
+                        WriteMessage(reason?.Message ?? "Запустите Trial или оформите подписку.");
                     }
                 );
             }
