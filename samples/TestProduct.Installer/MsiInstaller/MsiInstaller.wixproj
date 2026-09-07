@@ -1,0 +1,33 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>TestProduct.Installer.Setup</OutputName>
+    <!-- ICE validation requires Windows Installer service; skip in CI/restricted environments -->
+    <SuppressValidation>true</SuppressValidation>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Defaults; overridable via -p:ProductVersion=x.y.z -p:UpgradeCode=GUID -p:Configuration=Release -->
+    <ProductVersion Condition="'$(ProductVersion)' == ''">1.0.0</ProductVersion>
+    <UpgradeCode Condition="'$(UpgradeCode)' == ''">23C5894A-89FC-45D7-B1DB-1C8445FD3679</UpgradeCode>
+    <!--
+      LGC-759, причина 2. Здесь стояло BundleDir=..\TestProduct.Installer.bundle — корень
+      проекта, — а сборка кладёт бандл в $(OutputPath)$(BundleName), то есть под
+      bin\<Configuration>\net8.0-windows\ (Samples/Directory.Build.targets:31). Сборка писала
+      в одно место, MSI читал из другого.
+
+      Держалось это на ОСТАТКЕ: в основном рабочем дереве по старому пути лежал бандл от
+      15.03 (PackageContents.xml) и 09.06 (grossgeo-settings.json), и WiX находил его там.
+      В чистом клоне такого каталога нет — сборка падала на File Source, что запись и
+      называет. Заметьте: PluginBinDir рядом УЖЕ знал про bin\... — расходился только BundleDir.
+    -->
+    <DefineConstants>BundleDir=..\bin\$(Configuration)\net8.0-windows\TestProduct.Installer.bundle;PluginBinDir=..\bin\$(Configuration)\net8.0-windows;ProductVersion=$(ProductVersion);UpgradeCode=$(UpgradeCode)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+{
+  "name": "Test Product Installer",
+  "slug": "test-product-installer",
+  "shortDescription": "Тестовый продукт с типом дистрибуции Installer (EXE)",
+  "fullDescription": "Плагин для тестирования установки через внешний установщик. Демонстрирует DistributionType.Installer и TrialBindingMode.AccountAndMachine — trial привязан к комбинации аккаунта и машины.",
+  "licensingMode": "GrossGeo",
+  "externalPurchaseUrl": null,
+  "externalDownloadUrl": null,
+  "externalLicenseInstructions": null,
+  "trialDays": 14,
+  "tags": ["installer", "trial", "testing"]
+}

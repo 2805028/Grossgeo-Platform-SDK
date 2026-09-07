@@ -13,23 +13,27 @@
     <Version>1.0.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Installer</Product>
-    <Description>Р СћР ВµРЎРѓРЎвЂљР С•Р Р†РЎвЂ№Р в„– Р С—РЎР‚Р С•Р Т‘РЎС“Р С”РЎвЂљ РЎРѓ РЎвЂљР С‘Р С—Р С•Р С Р Т‘Р С‘РЎРѓРЎвЂљРЎР‚Р С‘Р В±РЎС“РЎвЂ Р С‘Р С‘ Installer (MSI/EXE)</Description>
+    <Description>РўРµСЃС‚РѕРІС‹Р№ РїСЂРѕРґСѓРєС‚ СЃ С‚РёРїРѕРј РґРёСЃС‚СЂРёР±СѓС†РёРё Installer (MSI)</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- StubInstaller РІР‚вЂќ Р С•РЎвЂљР Т‘Р ВµР В»РЎРЉР Р…РЎвЂ№Р в„– Р С—РЎР‚Р С•Р ВµР С”РЎвЂљ Р Р†Р Р…РЎС“РЎвЂљРЎР‚Р С‘ Р Т‘Р С‘РЎР‚Р ВµР С”РЎвЂљР С•РЎР‚Р С‘Р С‘, Р С‘РЎРѓР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р С‘Р В· РЎР‚Р ВµР С”РЎС“РЎР‚РЎРѓР С‘Р Р†Р Р…Р С•Р С–Р С• glob -->
+  <!-- MsiInstaller вЂ” WiX-РїСЂРѕРµРєС‚ РІРЅСѓС‚СЂРё РґРёСЂРµРєС‚РѕСЂРёРё, РёСЃРєР»СЋС‡Р°РµРј РёР· СЂРµРєСѓСЂСЃРёРІРЅРѕРіРѕ glob -->
   <ItemGroup>
-    <Compile Remove="StubInstaller\**" />
-    <None Remove="StubInstaller\**" />
-    <EmbeddedResource Remove="StubInstaller\**" />
+    <Compile Remove="MsiInstaller\**" />
+    <None Remove="MsiInstaller\**" />
+    <EmbeddedResource Remove="MsiInstaller\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MsiInstaller\License.rtf" />
+    <None Include="MsiInstaller\MsiInstaller.wixproj" />
   </ItemGroup>
 
-  <!-- GrossGeo SDK.Stub from NuGet (GrossGeo.Contracts types are embedded in the package). -->
+  <!-- GrossGeo SDK.Stub Reference -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.15" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.16" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->
@@ -57,5 +61,39 @@
     <Optimize>true</Optimize>
     <DebugType>none</DebugType>
   </PropertyGroup>
+
+  <!--
+    LGC-759: РґРІР° РІС…РѕРґР° СЃР±РѕСЂРєРё MSI РїРѕСЂРѕР¶РґР°СЋС‚СЃСЏ Р·РґРµСЃСЊ, Рё РўРћР›Р¬РљРћ Сѓ СЌС‚РѕРіРѕ РѕР±СЂР°Р·С†Р°.
+
+    РџРѕС‡РµРјСѓ РЅРµ РІ Samples/Directory.Build.targets, РѕР±С‰РµРј РґР»СЏ РІРѕСЃСЊРјРё: С‚Р°Рј РїСЂСЏРјС‹Рј С‚РµРєСЃС‚РѕРј
+    Р·Р°РїРёСЃР°РЅРѕ В«PackageContents.xml РќР• СЃРѕР·РґР°С‘С‚СЃСЏ РїСЂРё СЃР±РѕСЂРєРµ вЂ” User Panel РіРµРЅРµСЂРёСЂСѓРµС‚ РµРіРѕ РїСЂРё
+    СѓСЃС‚Р°РЅРѕРІРєРµВ», Рё РґР»СЏ Bundle Рё PluginDll СЌС‚Рѕ Р’Р•Р РќРћ (BundleInstaller.cs:456,
+    PackageContentsManager.CreateDefaultPackageContentsAsync:346). Р”Р»СЏ С‚РёРїР° Msi СѓСЃС‚Р°РЅРѕРІС‰РёРє
+    РїР»Р°С‚С„РѕСЂРјС‹ РЅРµ СѓС‡Р°СЃС‚РІСѓРµС‚ РІРѕРІСЃРµ вЂ” MSI РїРёС€РµС‚ РїСЂСЏРјРѕ РІ ApplicationPlugins, вЂ” РїРѕСЌС‚РѕРјСѓ РјР°РЅРёС„РµСЃС‚
+    РѕР±СЏР·Р°РЅ СЃСѓС‰РµСЃС‚РІРѕРІР°С‚СЊ Рљ РњРћРњР•РќРўРЈ РЎР‘РћР РљР. Р­С‚Рѕ РёСЃРєР»СЋС‡РµРЅРёРµ РїРѕ С‚РёРїСѓ РґРёСЃС‚СЂРёР±СѓС†РёРё, Р° РЅРµ РѕС‚РјРµРЅР°
+    РїСЂР°РІРёР»Р°: Р»РѕР¶РЅРѕРµ Р·Р°РєСЂС‹С‚РёРµ LGC-759 СЃРѕСЃС‚РѕСЏР»Рѕ СЂРѕРІРЅРѕ РІ С‚РѕРј, С‡С‚Рѕ РІРµСЂРЅРѕРµ РґР»СЏ РґРІСѓС… С‚РёРїРѕРІ
+    СЃРІРѕР№СЃС‚РІРѕ СЂР°СЃРїСЂРѕСЃС‚СЂР°РЅРёР»Рё РЅР° С‚СЂРµС‚РёР№.
+
+    AfterTargets="CreateBundleZip", Р° РЅРµ CreateBundleStructure: ZIP СЃРѕР±РёСЂР°РµС‚СЃСЏ РёР· РєР°С‚Р°Р»РѕРіР°
+    Р±Р°РЅРґР»Р°, Рё РїРѕСЂРѕР¶РґРµРЅРёРµ Р”Рћ Р°СЂС…РёРІР°С†РёРё РёР·РјРµРЅРёР»Рѕ Р±С‹ СЃРѕСЃС‚Р°РІ ZIP. РћРЅ СЃР»СѓР¶РёС‚ СЌС‚Р°Р»РѕРЅРѕРј РІС‹РїСѓСЃРєР° РІ
+    С‚РµСЃС‚Р°С… РёР·РІР»РµС‡РµРЅРёСЏ РјРµС‚Р°РґР°РЅРЅС‹С… (build-samples.ps1:306), Рё РјРµРЅСЏС‚СЊ РµРіРѕ СЌС‚Р° Р·Р°РїРёСЃСЊ РЅРµ РїСЂРѕСЃРёС‚.
+  -->
+  <!--
+    Condition РЅР° TargetFramework вЂ” РїРѕ Р—РђРњР•Р РЈ, Р° РЅРµ РёР· РѕСЃС‚РѕСЂРѕР¶РЅРѕСЃС‚Рё. Р‘РµР· РЅРµРіРѕ С†РµР»СЊ РѕС‚СЂР°Р±РѕС‚Р°Р»Р°
+    Р”Р’РђР–Р”Р«: СЃР±РѕСЂРєР° РёРґС‘С‚ РІРЅРµС€РЅРёРј РїСЂРѕС…РѕРґРѕРј (TargetFramework РїСѓСЃС‚, OutputPath = bin\Debug\) Рё
+    РІРЅСѓС‚СЂРµРЅРЅРёРј, РїРѕ TFM (bin\Debug\net8.0-windows\). Р’РЅРµС€РЅРёР№ СЃРѕР·РґР°С‘С‚ РєР°С‚Р°Р»РѕРі Р±Р°РЅРґР»Р° Рё РѕСЃС‚Р°РІР»СЏРµС‚
+    РµРіРѕ РџРЈРЎРўР«Рњ вЂ” 0 С„Р°Р№Р»РѕРІ, DLL РєР»Р°РґС‘С‚ С‚РѕР»СЊРєРѕ РІРЅСѓС‚СЂРµРЅРЅРёР№, вЂ” РЅРѕ РѕР±С‰РёР№ Directory.Build.targets
+    РѕС‚СЂР°Р±Р°С‚С‹РІР°РµС‚ РІ РѕР±РѕРёС…, Рё РіРµРЅРµСЂР°С‚РѕСЂ РїРёСЃР°Р» РјР°РЅРёС„РµСЃС‚ РІ С‚РѕРј С‡РёСЃР»Рµ РІ РїСѓСЃС‚С‹С€РєСѓ. Р’СЂРµРґР° СЌС‚Рѕ РЅРµ
+    РїСЂРёРЅРѕСЃРёР»Рѕ (MSI С‡РёС‚Р°РµС‚ РєР°С‚Р°Р»РѕРі СЃ TFM), РЅРѕ РїР»РѕРґРёР»Рѕ РІС‚РѕСЂРѕР№ РјР°РЅРёС„РµСЃС‚, РЅРёС‡РµРіРѕ РЅРµ РѕРїРёСЃС‹РІР°СЋС‰РёР№.
+  -->
+  <Target Name="GenerateMsiBundleInputs" AfterTargets="CreateBundleZip" Condition="'$(TargetFramework)' != ''">
+    <PropertyGroup>
+      <_MsiBundleDir>$(OutputPath)$(BundleName)</_MsiBundleDir>
+      <_GenScript>MsiInstaller\generate-bundle-inputs.ps1</_GenScript>
+    </PropertyGroup>
+
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(_GenScript)&quot; -BundleDir &quot;$(_MsiBundleDir)&quot; -ProductDir &quot;.&quot; -Version &quot;$(Version)&quot;"
+          WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
 
 </Project>

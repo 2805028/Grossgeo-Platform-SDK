@@ -1,0 +1,12 @@
+{
+  "name": "Test Product PluginDll",
+  "slug": "test-product-plugindll",
+  "shortDescription": "Тестовый продукт с типом дистрибуции PluginDll (одиночная DLL)",
+  "fullDescription": "Плагин для тестирования установки через одиночную DLL. Демонстрирует DistributionType.PluginDll — самый простой тип поставки без bundle. DLL загружается через NETLOAD или устанавливается в GrossGeoPlatformApps.bundle.",
+  "licensingMode": "GrossGeo",
+  "externalPurchaseUrl": null,
+  "externalDownloadUrl": null,
+  "externalLicenseInstructions": null,
+  "trialDays": 14,
+  "tags": ["plugindll", "perpetual", "testing"]
+}

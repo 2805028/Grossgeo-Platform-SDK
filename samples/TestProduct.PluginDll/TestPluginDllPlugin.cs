@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
-using GrossGeo.SDK;
 using GrossGeo.Contracts.Licensing;
+using GrossGeo.SDK;
 
 [assembly: CommandClass(typeof(TestProduct.PluginDll.TestPluginDllPlugin))]
 [assembly: ExtensionApplication(typeof(TestProduct.PluginDll.TestPluginDllPlugin))]
@@ -24,14 +24,11 @@ namespace TestProduct.PluginDll
     /// </summary>
     public class TestPluginDllPlugin : IExtensionApplication
     {
-        // ProductKey (демо-плейсхолдер в формате GG-XXXX-XXXX-XXXX-XXXX).
-        // Замените на ключ своего продукта из Developer Portal.
-        private const string ProductKey = "GG-9D11-4B0C-0008-FE63";
+        // API Key для TestProduct.PluginDll
+        private const string ProductKey = "GG-9739-D69F-BDF2-664C";
         private const string PluginVersion = "1.0.0";
 
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
-
-        private static ProductLicenseAccessor? _license;
 
         #region IExtensionApplication
 
@@ -51,7 +48,7 @@ namespace TestProduct.PluginDll
 
         public void Terminate()
         {
-            GrossGeoLicense.Shutdown(ProductKey);
+            GrossGeoLicense.Shutdown();
         }
 
         #endregion
@@ -73,14 +70,27 @@ namespace TestProduct.PluginDll
                     CheckForUpdatesOnInit = true
                 });
 
-                _license = GrossGeoLicense.ForProduct(ProductKey);
-
                 WriteMessage($"\n[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
                 WriteMessage($"      - IsValid: {result.IsValid}");
                 WriteMessage($"      - PlanTier: {result.PlanTier}");
                 WriteMessage($"      - BillingModel: {result.BillingModel}");
                 WriteMessage($"      - LicenseMode: {result.LicenseMode}");
+
+                // LGC-689: у отказа обязана быть НАЗВАННАЯ причина. Запись завелась с
+                // прогона, где образец показал «IsValid: False, PlanTier: Free» — и ни слова
+                // о том, почему. Причина была в журнале SDK (PRODUCT_NOT_FOUND), а в выводе
+                // самого образца её не было: человек у экрана видел отказ без повода.
+                //
+                // Значения тарифа сегодня уже не лгут — три перечисления получили
+                // Unknown = 255, умолчания свойств починены LGC-1020, разбор с провода идёт
+                // через заслон IsDefined (LGC-938). Осталось второе: НАЗВАТЬ причину там,
+                // где показан вердикт. Образцовая форма — TestProduct.Licensed.
+                if (!result.IsValid)
+                {
+                    WriteMessage($"      - ErrorCode: {result.ErrorCode}");
+                    WriteMessage($"      - Message: {result.Message}");
+                }
 
                 if (result.Features?.Count > 0)
                 {
@@ -115,33 +125,32 @@ namespace TestProduct.PluginDll
         [CommandMethod("GGDLLTEST")]
         public void DllTestCommand()
         {
-            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
-            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
-            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
-            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
-            if (ready.Status == LicenseCheckStatus.Unknown)
-            {
-                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
-                return;
-            }
-
             LicenseGuard.Protect(
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  ✅ GGDLLTEST — PluginDll команда       ║");
                     WriteMessage("╚════════════════════════════════════════╝");
-                    WriteMessage($"PlanTier: {_license?.PlanTier}");
-                    WriteMessage($"BillingModel: {_license?.BillingModel}");
+                    WriteMessage($"PlanTier: {GrossGeoLicense.PlanTier}");
+                    WriteMessage($"BillingModel: {GrossGeoLicense.BillingModel}");
                     WriteMessage($"DistributionType: PluginDll");
                     WriteMessage("Команда выполнена успешно!");
                 },
-                onBlocked: () =>
+                // LGC-671: причина доезжает до участника. «Требуется лицензия» при неподнятой
+                // панели — неправда, и она посылает человека покупать то, что у него есть.
+                onBlocked: reason =>
                 {
+                    if (reason?.Status == LicenseCheckStatus.NetworkError)
+                    {
+                        WriteMessage($"\n⏳ Проверить лицензию не удалось: {reason.Message}");
+                        WriteMessage("Право не отозвано — повторите после запуска User Panel.");
+                        return;
+                    }
+
                     WriteMessage("\n╔════════════════════════════════════════╗");
                     WriteMessage("║  ❌ Требуется лицензия                 ║");
                     WriteMessage("╚════════════════════════════════════════╝");
-                    WriteMessage("Запустите Trial или приобретите Perpetual лицензию.");
+                    WriteMessage(reason?.Message ?? "Запустите Trial или приобретите Perpetual лицензию.");
                 }
             );
         }
@@ -155,24 +164,24 @@ namespace TestProduct.PluginDll
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ PluginDll Product Info ═══");
             sb.AppendLine($"IsInitialized:  {GrossGeoLicense.IsInitialized}");
-            sb.AppendLine($"IsValid:        {_license?.IsValid}");
+            sb.AppendLine($"IsValid:        {GrossGeoLicense.IsValid}");
 
             sb.AppendLine("\n═══ License Model ═══");
-            sb.AppendLine($"PlanTier:       {_license?.PlanTier}");
-            sb.AppendLine($"BillingModel:   {_license?.BillingModel}");
-            sb.AppendLine($"LicenseMode:    {_license?.LicenseMode}");
+            sb.AppendLine($"PlanTier:       {GrossGeoLicense.PlanTier}");
+            sb.AppendLine($"BillingModel:   {GrossGeoLicense.BillingModel}");
+            sb.AppendLine($"LicenseMode:    {GrossGeoLicense.LicenseMode}");
             sb.AppendLine($"DistributionType: PluginDll");
 
             sb.AppendLine("\n═══ Status ═══");
-            sb.AppendLine($"ExpiresAt:      {_license?.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
-            sb.AppendLine($"IsOfflineMode:  {_license?.IsOfflineMode}");
-            sb.AppendLine($"IsGracePeriod:  {_license?.IsInGracePeriod}");
+            sb.AppendLine($"ExpiresAt:      {GrossGeoLicense.ExpiresAt?.ToString("dd.MM.yyyy") ?? "N/A (бессрочная)"}");
+            sb.AppendLine($"IsOfflineMode:  {GrossGeoLicense.IsOfflineMode}");
+            sb.AppendLine($"IsGracePeriod:  {GrossGeoLicense.IsInGracePeriod}");
 
             sb.AppendLine("\n═══ Features ═══");
-            sb.AppendLine($"core:      {_license?.HasFeature("core")}");
-            sb.AppendLine($"reporting: {_license?.HasFeature("reporting")}");
+            sb.AppendLine($"core:      {GrossGeoLicense.HasFeature("core")}");
+            sb.AppendLine($"reporting: {GrossGeoLicense.HasFeature("reporting")}");
 
-            var reportingLimit = _license?.GetFeatureLimit("reporting", "maxPerCall");
+            var reportingLimit = GrossGeoLicense.GetFeatureLimit("reporting", "maxPerCall");
             sb.AppendLine($"\n═══ Limits ═══");
             sb.AppendLine($"reporting.maxPerCall: {(reportingLimit.HasValue ? reportingLimit.Value.ToString() : "N/A")}");
 
@@ -185,17 +194,7 @@ namespace TestProduct.PluginDll
         [CommandMethod("GGDLLREPORT")]
         public void DllReportCommand()
         {
-            // LGC-720: дождитесь инициализации. Она идёт в фоне (иначе встанет загрузка
-            // AutoCAD), и команду можно запустить раньше, чем появится вердикт. Без
-            // ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
-            var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
-            if (ready.Status == LicenseCheckStatus.Unknown)
-            {
-                WriteMessage("\n" + ready.Message);   // «спросить не удалось», не «прав нет»
-                return;
-            }
-
-            _license?.RequireFeature("reporting",
+            FeatureGuard.Require("reporting",
                 action: () =>
                 {
                     WriteMessage("\n╔════════════════════════════════════════╗");
@@ -205,12 +204,12 @@ namespace TestProduct.PluginDll
 
                     // Симуляция: пользователь запросил отчёт по 200 объектам
                     var objectCount = 200;
-                    var limit = _license?.GetFeatureLimit("reporting", "maxPerCall");
+                    var limit = GrossGeoLicense.GetFeatureLimit("reporting", "maxPerCall");
 
                     WriteMessage($"Объектов в отчёте: {objectCount}");
                     WriteMessage($"Лимит maxPerCall:  {(limit.HasValue ? limit.Value.ToString() : "∞ (безлимит)")}");
 
-                    if (_license?.CheckLimit("reporting", "maxPerCall", objectCount) == true)
+                    if (GrossGeoLicense.CheckLimit("reporting", "maxPerCall", objectCount))
                     {
                         WriteMessage($"✅ Лимит не превышен — отчёт сформирован!");
                     }

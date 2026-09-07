@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
+using GrossGeo.Contracts.Licensing;
 using GrossGeo.SDK;
 
 [assembly: CommandClass(typeof(TestProduct.Installer.TestInstallerPlugin))]
@@ -22,14 +23,12 @@ namespace TestProduct.Installer
     /// </summary>
     public class TestInstallerPlugin : IExtensionApplication
     {
-        // ProductKey (демо-плейсхолдер в формате GG-XXXX-XXXX-XXXX-XXXX).
-        // Замените на ключ своего продукта из Developer Portal.
-        private const string ProductKey = "GG-1457-7E50-0007-AC2D";
+        // API Key для TestProduct.Installer
+        private const string ProductKey = "GG-ECD5-9B1D-0333-C517";
         private const string PluginVersion = "1.0.0";
 
+        private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(ProductKey);
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
-
-        private static ProductLicenseAccessor? _license;
 
         #region IExtensionApplication
 
@@ -72,14 +71,27 @@ namespace TestProduct.Installer
                     CheckForUpdatesOnInit = true
                 });
 
-                _license = GrossGeoLicense.ForProduct(ProductKey);
-
                 WriteMessage($"\n[SDK] Результат:");
                 WriteMessage($"      - Статус: {result.Status}");
                 WriteMessage($"      - IsValid: {result.IsValid}");
                 WriteMessage($"      - PlanTier: {result.PlanTier}");
                 WriteMessage($"      - BillingModel: {result.BillingModel}");
                 WriteMessage($"      - LicenseMode: {result.LicenseMode}");
+
+                // LGC-689: у отказа обязана быть НАЗВАННАЯ причина. Запись завелась с
+                // прогона, где образец показал «IsValid: False, PlanTier: Free» — и ни слова
+                // о том, почему. Причина была в журнале SDK (PRODUCT_NOT_FOUND), а в выводе
+                // самого образца её не было: человек у экрана видел отказ без повода.
+                //
+                // Значения тарифа сегодня уже не лгут — три перечисления получили
+                // Unknown = 255, умолчания свойств починены LGC-1020, разбор с провода идёт
+                // через заслон IsDefined (LGC-938). Осталось второе: НАЗВАТЬ причину там,
+                // где показан вердикт. Образцовая форма — TestProduct.Licensed.
+                if (!result.IsValid)
+                {
+                    WriteMessage($"      - ErrorCode: {result.ErrorCode}");
+                    WriteMessage($"      - Message: {result.Message}");
+                }
 
                 if (result.IsValid)
                 {
@@ -109,9 +121,14 @@ namespace TestProduct.Installer
         [CommandMethod("GGINSTTEST")]
         public void InstallerTest()
         {
-            if (!(_license?.IsValid ?? false))
+            if (!License.IsValid)
             {
-                WriteMessage("\n[GGINSTTEST] ⚠️ Требуется лицензия");
+                // LGC-671: решать по одному признаку IsValid значит объявлять «прав нет» там, где
+                // просто не поднялась панель. Причина лежит в LastResult — спрашиваем её.
+                var reason = License.LastResult;
+                WriteMessage(reason?.Status == LicenseCheckStatus.NetworkError
+                    ? $"\n[GGINSTTEST] ⏳ Проверить лицензию не удалось: {reason.Message}"
+                    : $"\n[GGINSTTEST] ⚠️ Требуется лицензия: {reason?.Message ?? "проверка не выполнялась"}");
                 return;
             }
 
@@ -127,10 +144,10 @@ namespace TestProduct.Installer
         {
             var sb = new StringBuilder();
             sb.AppendLine("\n═══ TestProduct.Installer — SDK Info ═══");
-            sb.AppendLine($"  IsValid: {_license?.IsValid}");
-            sb.AppendLine($"  PlanTier: {_license?.PlanTier}");
-            sb.AppendLine($"  BillingModel: {_license?.BillingModel}");
-            sb.AppendLine($"  LicenseMode: {_license?.LicenseMode}");
+            sb.AppendLine($"  IsValid: {License.IsValid}");
+            sb.AppendLine($"  PlanTier: {License.PlanTier}");
+            sb.AppendLine($"  BillingModel: {License.BillingModel}");
+            sb.AppendLine($"  LicenseMode: {License.LicenseMode}");
             sb.AppendLine($"  DistributionType: Installer");
             sb.AppendLine("═══════════════════════════════════════");
 

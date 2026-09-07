@@ -24,7 +24,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.15" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.16" />
 ```
 
 > Версия закрепляется точно, а не диапазоном. `2.*` разрешается в любую версию ветки 2 —

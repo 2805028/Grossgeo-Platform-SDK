@@ -85,6 +85,21 @@ namespace TestProduct.Concurrent
                 WriteMessage($"      - BillingModel: {result.BillingModel}");
                 WriteMessage($"      - LicenseMode: {result.LicenseMode}");
 
+                // LGC-689: у отказа обязана быть НАЗВАННАЯ причина. Запись завелась с
+                // прогона, где образец показал «IsValid: False, PlanTier: Free» — и ни слова
+                // о том, почему. Причина была в журнале SDK (PRODUCT_NOT_FOUND), а в выводе
+                // самого образца её не было: человек у экрана видел отказ без повода.
+                //
+                // Значения тарифа сегодня уже не лгут — три перечисления получили
+                // Unknown = 255, умолчания свойств починены LGC-1020, разбор с провода идёт
+                // через заслон IsDefined (LGC-938). Осталось второе: НАЗВАТЬ причину там,
+                // где показан вердикт. Образцовая форма — TestProduct.Licensed.
+                if (!result.IsValid)
+                {
+                    WriteMessage($"      - ErrorCode: {result.ErrorCode}");
+                    WriteMessage($"      - Message: {result.Message}");
+                }
+
                 if (result.Features?.Count > 0)
                 {
                     WriteMessage($"      - Features: {string.Join(", ", result.Features)}");

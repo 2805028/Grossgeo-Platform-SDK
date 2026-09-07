@@ -8,7 +8,7 @@
 
 | Параметр | Значение |
 |----------|----------|
-| ProductKey | задаётся в `TestPluginDllPlugin.cs` (демо-плейсхолдер; подставьте свой) |
+| API Key | `GG-PDLL-TEST-0008` |
 | DistributionType | **PluginDll** |
 | BillingModel | Perpetual (разовая покупка) |
 | LicenseMode | Machine |
@@ -57,8 +57,7 @@
 TestProduct.PluginDll/
 ├── TestProduct.PluginDll.csproj
 ├── TestPluginDllPlugin.cs
-├── plans-manifest.json
-├── release-manifest.json
+├── plans-manifest.json             # Импорт планов и фич через Developer Panel
 └── README.md
 ```
 

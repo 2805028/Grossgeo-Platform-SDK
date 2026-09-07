@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TestProduct.Installer — MSI definition (WiX v5)
+  Installs AutoCAD plugin bundle to %ProgramData%\Autodesk\ApplicationPlugins\
+  UpgradeCode is provided via $(var.UpgradeCode) from the server (same flow as ProductKey)
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="TestProduct.Installer"
+           Version="$(var.ProductVersion)"
+           Manufacturer="GrossGeo"
+           UpgradeCode="$(var.UpgradeCode)"
+           Scope="perMachine"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="TestProduct.Installer — AutoCAD/Civil3D plugin (MSI)" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- %ProgramData%\Autodesk\ApplicationPlugins\TestProduct.Installer.bundle\ -->
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="AutodeskDir" Name="Autodesk">
+        <Directory Id="ApplicationPluginsDir" Name="ApplicationPlugins">
+          <Directory Id="INSTALLFOLDER" Name="TestProduct.Installer.bundle">
+
+            <Component Id="PackageContentsComp" Guid="*">
+              <File Source="$(var.BundleDir)\PackageContents.xml" />
+            </Component>
+
+            <Directory Id="ContentsDir" Name="Contents">
+
+              <Component Id="SettingsComp" Guid="*">
+                <File Source="$(var.BundleDir)\Contents\grossgeo-settings.json" />
+              </Component>
+
+              <Component Id="MainPluginComp" Guid="*">
+                <File Source="$(var.PluginBinDir)\TestProduct.Installer.dll" />
+              </Component>
+
+              <Component Id="SdkStubComp" Guid="*">
+                <File Source="$(var.PluginBinDir)\GrossGeo.SDK.Stub.dll" />
+              </Component>
+
+              <Component Id="ContractsComp" Guid="*">
+                <File Source="$(var.PluginBinDir)\GrossGeo.Contracts.dll" />
+              </Component>
+
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="TestProduct.Installer" Level="1">
+      <ComponentRef Id="PackageContentsComp" />
+      <ComponentRef Id="SettingsComp" />
+      <ComponentRef Id="MainPluginComp" />
+      <ComponentRef Id="SdkStubComp" />
+      <ComponentRef Id="ContractsComp" />
+    </Feature>
+
+    <!-- Standard UI: shows EULA on first install, Repair/Remove on re-run -->
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+  </Package>
+
+</Wix>

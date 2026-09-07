@@ -1,15 +1,14 @@
 {
   "$schema": "https://grossgeo.example/schemas/release-manifest.v1.json",
   "manifestVersion": 1,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "channel": "Stable",
-  "distributionType": "PluginDll",
-  "changelog": "Первый релиз. Тип дистрибуции PluginDll.",
+  "distributionType": "Installer",
+  "changelog": "Обновление: улучшения стабильности, новые фичи.",
   "postInstallAction": "RequireRestart",
-  "netloadDllPath": "TestProduct.PluginDll.dll",
   "minAutoCADVersion": "R25.0",
   "maxAutoCADVersion": "R25.1",
-  "targetPlatforms": ["AutoCAD"],
+  "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],
-  "loadOnStartup": false
+  "loadOnStartup": true
 }
