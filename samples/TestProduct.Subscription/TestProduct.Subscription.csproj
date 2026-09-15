@@ -13,7 +13,7 @@
     <Version>2.1.0</Version>
     <Authors>GrossGeo Test</Authors>
     <Product>Test Product Subscription</Product>
-    <Description>РўРµСЃС‚РѕРІС‹Р№ РїСЂРѕРґСѓРєС‚ СЃ Trial Рё РїРѕРґРїРёСЃРєРѕР№ - РґРµРјРѕРЅСЃС‚СЂР°С†РёСЏ features</Description>
+    <Description>Тестовый продукт с Trial и подпиской - демонстрация features</Description>
     
     <!-- Output -->
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
@@ -22,25 +22,25 @@
 
   <!-- GrossGeo SDK.Stub Reference -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.16" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.17" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <Reference Include="accoremgd">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2025\accoremgd.dll</HintPath>
+      <HintPath>$(AcadRefDir)\accoremgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="acdbmgd">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2025\acdbmgd.dll</HintPath>
+      <HintPath>$(AcadRefDir)\acdbmgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="acmgd">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2025\acmgd.dll</HintPath>
+      <HintPath>$(AcadRefDir)\acmgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="AdWindows">
-      <HintPath>C:\Program Files\Autodesk\AutoCAD 2025\AdWindows.dll</HintPath>
+      <HintPath>$(AcadRefDir)\AdWindows.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

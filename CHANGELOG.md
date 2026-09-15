@@ -5,10 +5,49 @@ All notable changes to GrossGeo.SDK.Stub will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.17] - 2026-09-15
 
-**2.1.15 is prepared but not yet published to nuget.org.** When it is published, replace this
-heading with `## [2.1.15] - YYYY-MM-DD`. Until then the version below cannot be installed.
+### Added
+- **`ProductLicenseAccessor.WaitUntilReady(timeout)` / `WhenReadyAsync(timeout, ct)`.** If your
+  product family runs more than one GrossGeo product in the same AutoCAD process, the static
+  `GrossGeoLicense.WaitUntilReady`/`WhenReadyAsync` answer as soon as *any* initialized product is
+  ready — not necessarily the one whose command is running. `ForProduct(productKey)` now returns
+  an accessor with its own wait, scoped to that product alone. **The static methods are
+  unchanged** — this is an addition, not a behaviour change — they now carry a doc warning
+  pointing at the per-product replacement instead of leaving the ambiguity undocumented.
+
+### Note
+- Nothing on the wire, in the cache file, or in the fingerprint changes. A product built against
+  2.1.16 keeps working exactly as before and gains nothing until it is rebuilt against this
+  version and adopts the per-product wait where it runs more than one product.
+
+## [2.1.16] - 2026-09-07
+
+### Fixed
+- **The offline soft landing promised for 2.1.15 was not actually in that package.** The
+  published `2.1.15` was built before the code implementing it landed in the source tree (by
+  about six and a half hours), and the version number was never raised in between — the tree and
+  the published package carried the same number while their contents differed. This release
+  corrects that: the soft landing described below is now actually in the package you download.
+
+### Added
+- **Offline soft landing.** Until now, when the paid horizon of a signed verdict expired while
+  you were offline, your product was told the licence had expired and stopped. It now falls back
+  to the free tier for as long as the fallback horizon in the same signed envelope is alive: the
+  verdict carries the free plan tier and the free feature set instead of a refusal. The platform
+  has been signing the three fallback fields since 24.08; this is the first release that reads
+  them, on both targets, including the hand-written parser used on .NET Framework.
+
+### Changed
+- **The dormant multi-key validation path is now marked dormant by decision**, not by accident,
+  so a reader does not mistake it for a working feature. No behaviour of yours depends on it.
+
+### Note
+- **Nothing is removed or renamed on the public surface**, and no wire format, fingerprint or
+  cache file layout changes. A product built against 2.1.15 keeps working; rebuilding is what
+  delivers the soft landing.
+
+## [2.1.15] - 2026-09-06
 
 ### Fixed
 - **Usage was counted against the wrong product.** `ProductLicenseAccessor.IncrementUsageAsync`

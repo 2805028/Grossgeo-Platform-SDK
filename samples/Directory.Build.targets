@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!--
     Общий targets для тестовых продуктов GrossGeo.
     
@@ -45,6 +45,26 @@
     <Copy SourceFiles="@(_BundleDlls);@(_BundlePdbs)" 
           DestinationFolder="$(_BundleContentsDir)" 
           SkipUnchangedFiles="true" />
+
+    <!-- LGC-1052: grossgeo-settings.json ПОРОЖДАЕТСЯ, а не подразумевается.
+         Файл несёт productKey, в git его нет (выход сборки), и порождения не было: скрипт
+         сборки образцов только обновлял существующий. На чистом клоне — и, как оказалось,
+         на этой машине тоже — файла нет, и бандл уезжает БЕЗ КЛЮЧА. Это не падение, а тихо
+         неверный артефакт, потому порождение и вешается на саму сборку: работает у всякого,
+         кто собирает образец, а не только у того, кто зовёт build-samples.ps1.
+
+         У КАЖДОГО ФАЙЛА ОДИН ХОЗЯИН. Два образца исключены свойством в своих .csproj, и оба
+         раза причина названа там же: у Msi файл порождает его собственный генератор, у
+         PluginDll настроек нет по замыслу. Исключения объявлены, а не выведены из имени. -->
+    <!-- Условие про TargetFramework обязательно: при TargetFrameworks (во множественном
+         числе) MSBuild делает ВНЕШНЮЮ сборку без TFM, где OutputPath равен bin\Debug\ без
+         подкаталога. Цель CreateBundleStructure заводит там пустой <Имя>.bundle — это её
+         давнее поведение, не моё, и у прочих образцов такой каталог тоже есть. Без условия
+         порождение клало бы ключ ВТОРЫМ экземпляром, рядом с настоящим и без библиотек:
+         артефакт, который выглядит бандлом и им не является. -->
+    <Exec Condition="'$(TargetFramework)' != '' AND '$(GenerateGrossGeoSettings)' != 'false'"
+          Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)generate-grossgeo-settings.ps1&quot; -ProjectDir &quot;$(MSBuildProjectDirectory)&quot; -BundleDir &quot;$(_BundleOutputDir)&quot;"
+          ContinueOnError="false" />
     
     <Message Importance="high" Text="Bundle created: $(_BundleOutputDir)" />
   </Target>
@@ -81,6 +101,39 @@
     </PropertyGroup>
     <RemoveDir Directories="$(_BundleOutputDir)" ContinueOnError="true" />
     <Delete Files="$(_ZipOutputPath)" ContinueOnError="true" />
+  </Target>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       LGC-1050: отказ с НАЗВАННОЙ причиной вместо ошибок компилятора.
+
+       Без этой цели отсутствие AutoCAD давало постороннему разработчику стену CS0246 про
+       отсутствующие ТИПЫ (замерено: 5+ ошибок на первом же образце), по которым причину не
+       найти: компилятор жалуется на следствие, а не на недостающую зависимость.
+
+       Цель стоит ПЕРЕД разрешением ссылок — иначе она сработала бы уже после того, как
+       непонятные ошибки напечатаны, и внятность пропала бы.
+
+       СУДИТ ПО ФАКТУ, А НЕ ПО ЗАМЕСТИТЕЛЮ, и это поправка к первой моей редакции.
+       Первая проверяла «целевая платформа net48 -> обязан существовать каталог 2024»,
+       и уронила TestProduct.Licensed, который под net48 ссылок по пути НЕ ИМЕЕТ ВОВСЕ:
+       там PackageReference на AutoCAD.NET 24.3.0. Сборка, которая до правки шла зелёной,
+       стала красной — то есть заслон отвергал по признаку-заместителю.
+
+       Теперь спрашивается ровно то, ради чего заслон заведён: существует ли каталог, на
+       который ЭТОТ проект действительно ссылается. Нет ссылок по пути — нечего и проверять.
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <Target Name="CheckAutoCadReferenceDir" BeforeTargets="ResolveAssemblyReferences"
+          Condition="'$(SkipAcadRefDirCheck)' != 'true'">
+    <!-- Выключатель нужен не «на всякий случай», а как ПРИБОР: он даёт измерить, чем
+         падала сборка ДО этой цели. Без него «падало непонятными ошибками» осталось бы
+         утверждением, унаследованным от автора записи, а не замером. -->
+    <ItemGroup>
+      <_GgHintDir Include="$([System.IO.Path]::GetDirectoryName('%(Reference.HintPath)'))"
+                  Condition="'%(Reference.HintPath)' != ''" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(_GgHintDir.Identity)')"
+           Code="GG1050"
+           Text="Образец $(MSBuildProjectName) ($(TargetFramework)): не найден каталог, на который он ссылается — '%(_GgHintDir.Identity)'. Оттуда берутся управляемые сборки AutoCAD (accoremgd.dll, acdbmgd.dll, acmgd.dll, AdWindows.dll). Поставьте AutoCAD соответствующей версии либо укажите свой каталог: dotnet build -p:AcadRefDir=&quot;путь&quot; (для net48 — AcadRefDir48). Без этой проверки сборка падает стеной ошибок CS0246 об отсутствующих ТИПАХ, по которым причину не найти." />
   </Target>
 
 </Project>

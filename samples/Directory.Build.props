@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!--
     Общие свойства для тестовых AutoCAD плагинов GrossGeo.
     
@@ -16,6 +16,20 @@
     <!-- Подавление предупреждений о конфликте версий сборок .NET и AutoCAD -->
     <!-- MSB3277: конфликт версий Microsoft.VisualBasic и System.Drawing между .NET 8 и AutoCAD -->
     <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+
+    <!-- LGC-1050: путь к управляемому API AutoCAD ВЫНЕСЕН В СВОЙСТВО и переопределяем.
+
+         Было: у каждой из восьми ссылок абсолютный HintPath на C:\Program Files\Autodesk\AutoCAD 2025.
+         Образцы существуют ровно затем, чтобы их собирал посторонний; у него этого пути
+         может не быть, и он получал отказ компилятора об отсутствующих типах — сообщение,
+         по которому причину не найти.
+
+         Мы этого не видим ПО ПОСТРОЕНИЮ: у нас AutoCAD установлен, и любой наш прогон
+         зелен независимо от дефекта. Поэтому признак приёмки — сборка с переопределённым
+         путём на несуществующий каталог; она обязана падать ВНЯТНО, а не молча.
+    -->
+    <AcadRefDir Condition="'$(AcadRefDir)' == ''">C:\Program Files\Autodesk\AutoCAD 2025</AcadRefDir>
+    <AcadRefDir48 Condition="'$(AcadRefDir48)' == ''">C:\Program Files\Autodesk\AutoCAD 2024</AcadRefDir48>
   </PropertyGroup>
 
 </Project>
