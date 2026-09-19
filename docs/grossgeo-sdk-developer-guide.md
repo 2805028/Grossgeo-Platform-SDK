@@ -22,8 +22,9 @@
 6. [Инициализация SDK в плагине](#6-инициализация-sdk-в-плагине)
 7. [Защита функций лицензией](#7-защита-функций-лицензией)
 8. [Работа с Feature Flags (фичи)](#8-работа-с-feature-flags-фичи)
+   - [Ключевой материал возможности (Feature Key Material)](#ключевой-материал-возможности-feature-key-material)
 9. [Feature Limits — количественные ограничения](#9-feature-limits--количественные-ограничения)
-10. [Public Features — функции без авторизации](#10-public-features--функции-без-авторизации)
+10. [Фичи по умолчанию (isDefault)](#10-фичи-по-умолчанию-isdefault)
 11. [Concurrent Sessions — плавающие лицензии](#11-concurrent-sessions--плавающие-лицензии)
 12. [Проверка обновлений](#12-проверка-обновлений)
 13. [Бизнес-модели — полные примеры](#13-бизнес-модели--полные-примеры)
@@ -690,6 +691,70 @@ FeatureGuard.OrThrow("batch-processing", () => DoBatch());
 var hasFeature = await GrossGeoLicense.HasFeatureAsync("advanced-export");
 ```
 
+### Ключевой материал возможности (Feature Key Material)
+
+> **Начиная с SDK 2.2.0** (SDK, серверная и панельная части выпущены — панели с `1.0.2637.18001`,
+> 18.09.2026).
+
+`HasFeature` отвечает «да/нет» и ничего не защищает от подмены: патч, возвращающий `true`,
+открывает фичу мгновенно. Для фичей, чья ценность лежит не в коде, а в **данных продукта**
+(справочные таблицы, шаблоны, коэффициенты), этого недостаточно — нужен настоящий секрет, а не
+флаг.
+
+Для таких фичей платформа хранит и отдаёт **ключевой материал** — случайные байты, привязанные к
+паре «код возможности + `kid`» (идентификатор версии секрета, который вы придумываете сами, например
+`2026-09`, — нужен для ротации без поломки уже выпущенных релизов: старый `kid` продолжает
+открывать данные, зашифрованные под ним, новый — новые). Вы шифруете этим материалом ценные данные
+продукта при сборке релиза и расшифровываете на машине пользователя, получив материал через SDK.
+Секрет заводится и ротируется в Developer Portal — сам SDK его не генерирует и панель разработчика
+никогда его не показывает.
+
+**Доступен только через продукт-скоупный аксессор**, как и остальной API, зависящий от конкретного
+продукта в мультипродуктовом процессе (раздел 6 выше) — у статического `GrossGeoLicense` этого
+члена нет:
+
+```csharp
+var accessor = GrossGeoLicense.ForProduct(ProductKey);
+
+// Синхронно, из уже полученного вердикта
+if (accessor.TryGetFeatureKey("advanced-templates", "2026-09", out byte[]? material))
+{
+    var decrypted = DecryptTemplates(EncryptedTemplatesBytes, material);
+    // material — копия на каждый вызов; можно безопасно обнулить после использования,
+    // на следующий вызов это не повлияет
+}
+
+// Или сразу узнать причину, если материала нет
+var availability = accessor.GetFeatureKeyAvailability("advanced-templates", "2026-09");
+
+// Асинхронно — дождаться готовности продукта перед первым обращением
+var lookup = await accessor.GetFeatureKeyAsync(
+    "advanced-templates", "2026-09", TimeSpan.FromSeconds(10));
+
+if (lookup.Found)
+    DecryptTemplates(EncryptedTemplatesBytes, lookup.Material);
+```
+
+**`FeatureKeyAvailability`** — почему материала может не быть и что сказать пользователю:
+
+| Значение | Когда | Что сказать пользователю |
+|---|---|---|
+| `Unknown` | Проверка лицензии ещё не завершилась | «лицензия проверяется» |
+| `Available` | Материал получен, срок не истёк | — (используйте `material`) |
+| `NotEntitled` | Вердикт получен, но возможности нет в текущем плане | «возможность не входит в ваш план» |
+| `KidNotIssued` | Возможность есть, но именно этот `kid` платформа не выдавала (отозван или никогда не существовал) | «обновите продукт до новой версии» |
+| `PanelUnavailable` | GrossGeo User Panel не отвечает, вердикт взят из офлайн-запаса SDK | «откройте GrossGeo User Panel» |
+| `OfflineExpired` | Материал был, но истёк срок офлайн-работы без новой связи с панелью | «восстановите подключение к User Panel» |
+| `Denied` | Лицензия окончательно отклонена (истекла, отозвана и т. п.) | текст из `LicenseResult` |
+
+**`PanelUnavailable` — не то же самое, что «лицензии нет».** Материал живёт только в памяти
+процесса и **никогда не пишется на диск** — ни в офлайн-кэш SDK, ни куда-либо ещё; его единственный
+источник — запущенная User Panel. SDK может при этом подтверждать саму лицензию (`IsValid = true`)
+из собственного офлайн-кэша уже несколько дней — это разные механизмы с разным сроком жизни. Без
+хотя бы недавнего живого ответа панели `GetFeatureKeyAvailability` вернёт `PanelUnavailable`, даже
+когда лицензия в порядке. Показывайте пользователю разные сообщения для «нет прав» и «нет связи с
+панелью» — второе решается открытием User Panel, а не покупкой.
+
 ---
 
 ## 9. Feature Limits — количественные ограничения
@@ -769,25 +834,35 @@ catch (LimitExceededException ex)
 
 ---
 
-## 10. Public Features — функции без авторизации
+## 10. Фичи по умолчанию (`isDefault`)
 
-Public Features — это фичи, которые работают даже без лицензии (для неавторизованных пользователей). Это полезно для:
+> **Решение владельца №14 (18.09.2026).** Прежняя редакция этого раздела обещала фичи,
+> которые «работают даже без лицензии», и код `LoadPublicFeaturesAsync`/`IsPublicFeature`,
+> которого в SDK не существует — грепом по `src/SDK/GrossGeo.SDK.Stub/` таких методов нет
+> ни одного, только упоминание в `CHANGELOG.md` как СНЯТЫХ («no longer needed, use
+> `HasFeature` for default features»). Правка ниже меняет не только текст: отклонённый
+> вердикт лицензии сегодня не оставляет НИКАКИХ прав, включая фичи, отмеченные `isDefault`
+> — исключения для «публичных» фичей не существует.
 
-- Демонстрации базового функционала
-- Просмотра данных (без редактирования)
-- Привлечения пользователей к покупке
+`isDefault` — признак фичи в `plans-manifest.json` (`FeatureV1.IsDefault`), а не отдельный
+режим доступа. Он значит «эта фича входит во ВСЕ планы продукта, включая бесплатный»,
+и ничего не говорит про то, нужна ли лицензия — она нужна ровно как для любой другой фичи.
+Проверяется тем же `HasFeature`, и он безусловно требует действующего вердикта
+(`GrossGeoLicense.cs`, `HasFeature`: `if (_lastResult?.IsValid != true) return false;` —
+до этой проверки список фичей даже не смотрится). Отдельного `IsPublicFeature`/
+`LoadPublicFeaturesAsync`, которые работали бы раньше инициализации или без лицензии
+вовсе, в SDK нет и не задумано.
 
-Фичи помечаются как публичные (`isPublic: true`) в Developer Portal.
+Единственный случай, где функциональность доступна без ПОКУПКИ, — весь продукт целиком
+бесплатный (`billingModel: Free` в манифесте). Тогда лицензия всё равно нужна и всё равно
+проверяется, но её вердикт для бесплатного продукта операционный по построению (`Р-182`) —
+это свойство продукта, а не отдельного флага у фичи.
 
 ```csharp
 public void Initialize()
 {
     _ = Task.Run(async () =>
     {
-        // Загрузить список публичных фичей (можно до авторизации)
-        await GrossGeoLicense.LoadPublicFeaturesAsync(productId);
-
-        // Инициализировать SDK
         await GrossGeoLicense.Initialize(options);
     });
 }
@@ -799,27 +874,22 @@ public void ViewerCommand()
     // раньше, чем появится вердикт. Без ожидания отказ НЕОТЛИЧИМ от «лицензии нет».
     var ready = GrossGeoLicense.WaitUntilReady(TimeSpan.FromSeconds(10));
     if (ready.Status == LicenseCheckStatus.Unknown) { Ed?.WriteMessage("\n" + ready.Message); return; }
-    // HasFeature проверяет и обычные, и публичные фичи
+    // HasFeature проверяет ЛЮБУЮ фичу против текущего вердикта — isDefault здесь ничего не меняет.
+    // Отклонённый вердикт вернёт false и для этой фичи, даже если она isDefault.
     if (GrossGeoLicense.HasFeature("basic-viewer"))
     {
-        ShowViewer(); // Работает для всех, даже без лицензии
+        ShowViewer();
     }
 }
 
 [CommandMethod("EDITOR")]
 public void EditorCommand()
 {
-    // Непубличная фича — требует лицензию
+    // Фича не из isDefault — тот же HasFeature, разница только в наборе планов, где она включена
     FeatureGuard.Require("advanced-editor",
         () => ShowEditor(),
         () => Ed?.WriteMessage("\nРедактор доступен в плане Pro."));
 }
-```
-
-Проверить, является ли фича публичной:
-
-```csharp
-bool isPublic = GrossGeoLicense.IsPublicFeature("basic-viewer"); // true
 ```
 
 ---
@@ -1459,8 +1529,7 @@ MyPlugin.v1.0.0.bundle.zip
       "code": "all-tools",
       "name": "Все инструменты",
       "description": "Полный набор инструментов",
-      "isDefault": true,
-      "isPublic": false
+      "isDefault": true
     }
   ],
   "planFeatures": {
@@ -1517,29 +1586,25 @@ MyPlugin.v1.0.0.bundle.zip
       "code": "basic-export",
       "name": "Базовый экспорт",
       "description": "Экспорт в GeoJSON",
-      "isDefault": true,
-      "isPublic": false
+      "isDefault": true
     },
     {
       "code": "advanced-export",
       "name": "Расширенный экспорт",
       "description": "Экспорт в SHP, KML, GPX с настройками",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     },
     {
       "code": "batch-export",
       "name": "Пакетный экспорт",
       "description": "Экспорт нескольких файлов за раз",
-      "isDefault": false,
-      "isPublic": false
+      "isDefault": false
     },
     {
       "code": "preview",
       "name": "Предпросмотр",
       "description": "Просмотр данных перед экспортом",
-      "isDefault": true,
-      "isPublic": true
+      "isDefault": true
     }
   ],
 
@@ -1622,8 +1687,7 @@ MyPlugin.v1.0.0.bundle.zip
 | `code` | string | Код фичи (используется в SDK: `HasFeature("code")`) |
 | `name` | string | Название для отображения |
 | `description` | string | Описание |
-| `isDefault` | bool | Доступна по умолчанию (даже без плана) |
-| `isPublic` | bool | Доступна без авторизации (Public Feature) |
+| `isDefault` | bool | Включена во все планы продукта, включая бесплатный — не отменяет проверку лицензии (решение владельца №14) |
 
 #### Секция `planFeatures`
 
@@ -1908,8 +1972,6 @@ var result = await GrossGeoLicense.Initialize(new LicenseOptions
 | `RequireFeature(string, Action, Action?)` | Мягкая защита фичи |
 | `RequireFeatureOrThrow(string, Action)` | Строгая (FeatureNotAvailableException) |
 | `RequireFeatureOrThrow<T>(string, Func<T>)` | Строгая с возвратом |
-| `LoadPublicFeaturesAsync(Guid, CancellationToken)` | Загрузить публичные фичи |
-| `IsPublicFeature(string)` | Фича публичная? |
 
 #### Feature Limits
 

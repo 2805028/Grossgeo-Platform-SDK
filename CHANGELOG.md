@@ -5,6 +5,144 @@ All notable changes to GrossGeo.SDK.Stub will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-09-19
+
+### Fixed
+- **A rejected/expired license could still grant a feature that was on the plan before the
+  rejection — including a product-wide feature meant to work even WITHOUT a licence
+  (`LGC-1197`).** The two places that build the result you get back from any check — a live
+  signed response and the offline cache — copied `Features`/`FeatureLimits` off the signed
+  payload unconditionally, without checking whether that payload's own verdict was actually
+  valid. `ProductLicenseAccessor.HasFeature` — the form this README's own examples use — had no
+  separate check either, so it could answer `true` for a feature you shouldn't have. The SDK's
+  older static `GrossGeoLicense.HasFeature` already had a narrower guard for exactly this
+  (`LGC-519`); this closes it at the source instead, for both call forms, and adds the accessor's
+  own guard on top as a second, independent layer, so it matches the static form: **a rejected
+  verdict now grants nothing, full stop — no exception for product-wide "always on" features**
+  (owner decision; an earlier draft of this release tried to carve those out and reverted, because
+  the SDK has no way to tell a product-wide feature apart from a plan one in the signed list it
+  receives — only the platform does, before it merges them). **The platform clears product-wide
+  features on a rejected verdict too, as of the same release this SDK version ships with** — an
+  interim server build kept them on purpose while the owner's decision was still open (so that no
+  one was narrowed by accident before a decision existed), and that interim form is being replaced
+  to match. This SDK-side gate does not depend on or wait for the platform's timing either way: it
+  answers `false` on its own, before any server-provided list is even consulted. The fix is at the two
+  result-builders, so it reaches every reader of `LicenseResult.Features`/`.FeatureLimits` on a
+  rejected verdict — not only `HasFeature`/`RequireFeature`/`RequireFeatureOrThrow` (via
+  `GrossGeoLicense.ForProduct(...)` or the static `GrossGeoLicense`), but also the static
+  `GrossGeoLicense.Features`/`.FeatureLimits` properties and anything that displayed them. **If
+  your product uses a product-wide feature that is meant to work without a licence, read this
+  before you rebuild:** with this release there is no remaining way to keep it working through
+  `HasFeature`/`RequireFeature` alone — both already answer `false`/skip whenever the verdict
+  itself is rejected (no licence at all, an expired one, wrong machine, etc.), regardless of how
+  you call them. If you need that feature to keep working without a licence, stop gating it on a
+  licence check at all.
+- **`CheckLimit`/`RequireLimit`/`RequireLimitOrThrow` (both the static form and the accessor) could
+  still run on a rejected license, because they never checked `IsValid` at all — only whether a
+  limit number was present (`LGC-1197`, follow-up found by the same review).** Before this fix, a
+  rejected-but-signed verdict with a real limit number in the envelope (e.g. a plan-limit of 50)
+  and a usage under that number (e.g. 3) made `CheckLimit` answer "not exceeded" and
+  `RequireLimit` *run the action* — the same as a valid, paid verdict would, with no verdict check
+  anywhere in the path. `CheckLimit` only ever refused when the actual usage exceeded the raw
+  number, never because the verdict itself was a rejection. Gating `Features`/`FeatureLimits`
+  above made this worse: with `FeatureLimits` now `null` on a rejected verdict, "limit not
+  configured" and "verdict rejected" became indistinguishable, and the same permissive answer
+  would have followed for every rejected verdict, not just the ones with a usage under the number.
+  Both forms now check
+  the verdict directly: a verdict that was received and rejected is treated as exceeding every
+  limit, regardless of what number the envelope carries. **Deliberately unchanged:** the case where
+  no verdict has ever been received at all (`Initialize`/`CheckAsync` not yet completed) still
+  answers "not exceeded" — that is a separate, still-open question tracked in
+  `ARefusedLicenceIsNotAPermissionTests.cs`, not decided by this release.
+- **`AcquireSessionAsync`/`AcquireSessionForProductAsync` answered the same `NOT_CONCURRENT_MODE`
+  for two different situations (`LGC-1208`, found live during the §13 acceptance run this release
+  closes).** One is genuine: the verdict is known and the plan really isn't Concurrent. The other
+  is "we don't have a verdict at all yet, or its licence mode came back `Unknown`" — typically the
+  panel wasn't reachable when this was called — and `NOT_CONCURRENT_MODE`'s message ("Лицензия не
+  требует concurrent сессии" — "this licence doesn't need a concurrent session") is simply false in
+  that case: no plan was ever read. The second situation now returns a new code,
+  `LICENSE_MODE_UNKNOWN`, instead. If your product distinguishes `AcquireSessionAsync` failures by
+  `ErrorCode`, add a case for it — treat it like any other "could not verify yet" outcome (retry
+  once the licence check completes), not like `NOT_CONCURRENT_MODE`.
+- **`Initialize` never called (not just not yet finished) used to answer `Status = Blocked` —
+  "you have no rights" — instead of "we couldn't ask" (`LGC-210`).** Three internal pre-checks
+  (before the SDK even has an IPC client to ask anything) returned a blocked verdict with
+  `ErrorCode = NOT_INITIALIZED`; a product following the documented `Protect(onBlocked: ...)`
+  pattern showed "license blocked" to a user whose licence was perfectly fine — the SDK simply
+  hadn't been asked to check yet. Now returns `Status = NetworkError` with the same
+  `NOT_INITIALIZED` code (there is no separate `Unavailable` status — this is the same value a
+  real network failure gets, because the underlying claim is the same: "could not verify"),
+  matching how a gateway refusal that isn't an authoritative denial has worked since 25.08.
+  `Protect(onBlocked: ...)` still fires exactly as before — the callback decision is driven by
+  `IsValid`, not `Status` — but the `Status` value your handler receives inside it changes from
+  `Blocked` to `NetworkError` for this specific case.
+- **A product blocked by moderation (`PRODUCT_BLOCKED`) is now treated as a final answer, not a
+  connectivity blip (`LGC-1150`/`LGC-1153`).** An SDK built against 2.1.17 or earlier reads a
+  moderation block the same way it reads a lost connection: a transient failure, so it keeps
+  serving the last positive verdict from the signed offline cache for as long as that cache stays
+  valid — the platform sets that ceiling per licence mode and billing model (see the correction
+  under 2.1.14 below), from none at all for a Concurrent-mode licence up to 30 days for most
+  others. `PRODUCT_BLOCKED` is now in that same authoritative-denial set, alongside
+  `LICENSE_EXPIRED`/`LICENSE_NOT_FOUND`: no cache fallback, `Status = Blocked` with
+  `ErrorCode = PRODUCT_BLOCKED` right away, once your product is moderated off the platform.
+  **The set of authoritative codes is compiled into the SDK inside your product, the same as
+  every entry already in it** — the platform side of this pairing does not change what an
+  already-shipped build of your product does; only a rebuild against 2.2.0 closes the gap.
+  Nothing about this is new server behaviour to plan around — the platform already stops signing
+  fresh verdicts for a blocked product; this release only stops the SDK from stretching the last
+  one it already had.
+
+### Added
+- **Feature key material (`ProductLicenseAccessor.TryGetFeatureKey` / `GetFeatureKeyAvailability` /
+  `GetFeatureKeyAsync`, and the new `FeatureKeyAvailability` enum in `GrossGeo.Contracts`).** For
+  features whose value lives in the product's own data (lookup tables, templates, coefficients),
+  the platform can now hand your product an actual secret — random bytes tied to a
+  `(featureCode, kid)` pair — instead of just a yes/no verdict. You encrypt the valuable data with
+  it at build time and decrypt on the user's machine; a patched `HasFeature` no longer unlocks
+  anything by itself, because the verdict and the material are separate. `kid` is a version tag you
+  choose yourself (e.g. `2026-09`), so rotating the secret does not break already-shipped releases
+  still pointing at the old one. The material lives only in this product's own
+  `ProductLicenseAccessor` — there is no static `GrossGeoLicense` member for it, matching how every
+  other per-product answer works after 2.1.0.
+- **Material is available offline for about 24 hours past a stale signature, not just until the
+  next live check**, closing a gap where the live validation path would have discarded material
+  from an otherwise-valid signed response for being a few seconds older than its replay window.
+- **`ReleaseSessionWithResultAsync` (`GrossGeoLicense` and `ProductLicenseAccessor`).** The
+  existing `ReleaseSessionAsync` sends the release request and returns without telling you whether
+  the gateway actually confirmed it — a failed release there looked identical to a successful one.
+  The new method returns a `SessionReleaseResult` (`IsSuccess`, `ErrorCode`, `ErrorMessage`) built
+  from the gateway's real response. `ReleaseSessionAsync` itself is unchanged and still does not
+  report the outcome — switch to the new method if your product needs to know.
+- **`UpdateCheckResult.Completeness` (`UpdateCheckCompleteness` enum, new in `GrossGeo.Contracts`)**,
+  returned by `CheckForUpdatesAsync`. Distinguishes "we asked every installed product and none has
+  an update" (`Complete`) from "the sweep behind this answer did not reach every product"
+  (`Partial`/`AllFailed`) and "nothing installed to check" (`NothingInstalled`) — an empty update
+  list used to mean all four of those silently. Defaults to `Unknown` on any path that did not get
+  a real answer (gateway refusal, exception) — this SDK does not manufacture a completeness claim
+  it cannot back. Requires the User Panel to actually report the field (server/panel side landed
+  first, this release reads it for the first time). `UpdateCheckResult.NoUpdate(UpdateCheckCompleteness)`
+  and `.Available(string, DateTime?, string?, bool, UpdateCheckCompleteness)` are new overloads,
+  not new parameters on the existing ones — the old `NoUpdate()` and `Available(...)` signatures are
+  byte-for-byte unchanged, so a precompiled caller keeps working without a rebuild.
+- **Two opt-in environment variables, read fresh on every use rather than cached (`LGC-1201`),
+  meant for test/CI hosts that link this SDK's source directly — not something a normal product
+  install needs to set.** `GROSSGEO_SDK_NO_PANEL_LAUNCH=1` stops the SDK from spawning a real
+  `GrossGeo.UserPanel.exe` when no panel answers (it still answers "unavailable" exactly as
+  before — this only removes the side effect of launching one). `GROSSGEO_DATA_DIR` redirects
+  where the SDK reads/writes its own cache, signing-key cache and diagnostic log, reusing the same
+  variable name and `?? fallback` shape the User Panel already uses for the same purpose. Both
+  default to today's behaviour when unset; nothing changes for a product that does not set them.
+
+### Note
+- **Requires the server (feature-key storage, Developer API) and the User Panel (material cache,
+  IPC field) to ship first — this SDK change alone does not turn the feature on.** The material
+  itself is served by the User Panel, not cached by the SDK on disk: without a running panel (or at
+  least one recent live check), `GetFeatureKeyAvailability` reports `PanelUnavailable`, even while
+  the cached licence verdict itself is still `IsValid = true` from the SDK's own offline cache.
+  Read that as "panel not reachable", not "not entitled" — they call for different UI. See
+  `docs/external/grossgeo-sdk-developer-guide.md` §8 and the package `README.md` for the full
+  contract and an example.
+
 ## [2.1.17] - 2026-09-15
 
 ### Added
@@ -86,6 +224,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   authoritative denial is compiled into the SDK inside your product**: updating the User Panel on
   the end user's machine does not change this, because the decision is taken inside your own
   assembly.
+  **Correction, added in 2.2.0's notes:** "up to seven days" above was a simplification and was
+  never true for every combination. The platform sets the offline cache ceiling server-side, per
+  licence mode and billing model
+  (`LicenseService.ResolveOfflineCacheLimit`): a Concurrent-mode licence has no offline grace at
+  all (session occupancy cannot be verified offline); a user-bound subscription is capped at 7
+  days; everything else — Machine mode, Perpetual, fixed-term contracts — up to 30 days, or the
+  licence's own expiry if that comes sooner. Nothing about the mechanism itself changed since
+  2.1.14; only this description of it does.
 - **Two `Status` values change.** `Check()` called before any check completed returned
   `NotFound` with a message telling the user to activate a product they had already activated;
   it now returns `Unknown` with `ErrorCode = NOT_CHECKED`. Failure to verify the signature of the

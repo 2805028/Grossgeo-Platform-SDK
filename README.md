@@ -24,7 +24,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.17" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
 ```
 
 > Версия закрепляется точно, а не диапазоном. `2.*` разрешается в любую версию ветки 2 —
@@ -120,6 +120,15 @@ public void MyCommand()
 > спрашивать о правах, не дождавшись, — нет. `WaitUntilReady` для обычных команд,
 > `await WhenReadyAsync(...)` для `async`-обработчиков. Оба по истечении срока отдают
 > `Status = Unknown` и `ErrorCode = NOT_CHECKED` — **явное «не спрашивали», а не отказ**.
+>
+> **Забыли вызвать `Initialize` вовсе (не просто не дождались, а не позвали)** — с 2.2.0 это
+> `Status = NetworkError`, `ErrorCode = NOT_INITIALIZED`, а не `Blocked`: SDK не смог спросить,
+> а не «прав нет» (отдельного значения `Unavailable` в `LicenseCheckStatus` нет — это тот же
+> статус, что и у сетевого отказа, потому что предмет тот же: «не смогли проверить»).
+> `Protect(onBlocked: ...)` по-прежнему сработает — решение о вызове коллбэка смотрит на
+> `IsValid`, не на `Status`, — изменился только `Status`, который приедет ВНУТРЬ `onBlocked`:
+> `NetworkError`, а не `Blocked`. Если ваш обработчик уже различает причины (как в примере
+> выше), этот случай попадёт в ветку `NetworkError` наравне с настоящими сетевыми отказами.
 
 ---
 
@@ -229,6 +238,49 @@ License.RequireLimitOrThrow("batch-export", "maxPerCall", objects.Count);
 
 ---
 
+## Feature Key Material
+
+> Начиная с SDK **2.2.0** (SDK, серверная и панельная части выпущены — панели с `1.0.2637.18001`,
+> 18.09.2026). Для фичей, чья ценность в самих данных продукта (таблицы, шаблоны, коэффициенты),
+> платформа может отдавать не просто «да/нет», а секрет, которым вы шифруете эти данные при сборке
+> и расшифровываете на машине пользователя. Секрет заводится в Developer Portal и привязан к паре
+> `(featureCode, kid)` — `kid` придумываете сами, для ротации без поломки уже выпущенных релизов.
+
+```csharp
+// Синхронно, из уже полученного вердикта
+if (License.TryGetFeatureKey("advanced-templates", "2026-09", out byte[]? material))
+{
+    var decrypted = DecryptTemplates(EncryptedTemplatesBytes, material);
+    // material — копия при каждом вызове, можно безопасно обнулить после использования
+}
+else
+{
+    switch (License.GetFeatureKeyAvailability("advanced-templates", "2026-09"))
+    {
+        case FeatureKeyAvailability.PanelUnavailable:
+            ShowMessage("Откройте GrossGeo User Panel"); break;
+        case FeatureKeyAvailability.NotEntitled:
+            ShowUpgradePrompt(); break;
+        case FeatureKeyAvailability.OfflineExpired:
+            ShowMessage("Восстановите подключение к User Panel"); break;
+        // KidNotIssued — обновите продукт; Denied — текст из LastResult; Unknown — ещё проверяется
+    }
+}
+
+// Асинхронно — дождаться готовности продукта перед первым обращением
+var lookup = await License.GetFeatureKeyAsync(
+    "advanced-templates", "2026-09", TimeSpan.FromSeconds(10));
+if (lookup.Found)
+    DecryptTemplates(EncryptedTemplatesBytes, lookup.Material);
+```
+
+> **`PanelUnavailable` ≠ «лицензии нет».** SDK может подтверждать лицензию из собственного
+> офлайн-кэша несколько дней, но материал в этом кэше никогда не хранится (панель — единственный
+> его источник). Без хотя бы недавнего живого ответа панели `GetFeatureKeyAvailability` вернёт
+> `PanelUnavailable`, даже когда `License.IsValid == true`. Различайте эти два сообщения в UI.
+
+---
+
 ## Usage Tracking (v3)
 
 Для лимитов `MaxPerDay` / `MaxPerMonth` необходим серверный подсчёт использования.
@@ -328,6 +380,8 @@ if (update.HasUpdate)
 }
 ```
 
+`update.Completeness` (`UpdateCheckCompleteness`, с 2.2.0) говорит, насколько полон был опрос установленных продуктов, а не только был ли он. Отсутствие обновления при `Completeness != Complete` и `!= NothingInstalled` (например, `Partial` или `AllFailed`) — это «опрос не закончен», а не «обновлений нет»; показывать такое как «всё актуально» нельзя.
+
 ---
 
 ## Deep-link: старт Trial из плагина
@@ -401,6 +455,20 @@ new LicenseOptions
 | `Machine` (1) | Привязка к машине (fingerprint) |
 | `Concurrent` (2) | Плавающие лицензии (пул сессий) |
 
+#### FeatureKeyAvailability
+
+Начиная с 2.2.0 (см. [Feature Key Material](#feature-key-material)).
+
+| Значение | Описание | Что сказать пользователю |
+|----------|----------|---------------------------|
+| `Unknown` (0) | Проверка лицензии ещё не завершилась | «лицензия проверяется» |
+| `Available` (1) | Материал получен, срок не истёк | — |
+| `NotEntitled` (2) | Вердикт получен, но возможности нет в плане | «не входит в ваш план» |
+| `KidNotIssued` (3) | Возможность есть, но этот `kid` платформа не выдавала | «обновите продукт» |
+| `PanelUnavailable` (4) | User Panel не отвечает, вердикт из офлайн-запаса SDK | «откройте User Panel» |
+| `OfflineExpired` (5) | Материал был, но истёк срок офлайн-работы без связи с панелью | «восстановите подключение» |
+| `Denied` (6) | Лицензия окончательно отклонена | текст из `LastResult`/`LicenseResult` |
+
 ### GrossGeoLicense — свойства
 
 | Свойство | Тип | Описание |
@@ -442,7 +510,8 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `Shutdown()` | Завершение работы (все продукты) |
 | `Shutdown(string productKey)` | Завершение работы (конкретный продукт) |
 | `AcquireSessionAsync(string?, CancellationToken)` | Получить concurrent-сессию |
-| `ReleaseSessionAsync(CancellationToken)` | Освободить сессию |
+| `ReleaseSessionAsync(CancellationToken)` | Освободить сессию — не сообщает, подтвердил ли шлюз освобождение |
+| `ReleaseSessionWithResultAsync(CancellationToken)` | 2.2.0: то же, но с признаком результата (`SessionReleaseResult.IsSuccess`/`ErrorCode`) |
 | `SendSessionHeartbeatAsync()` | Отправить heartbeat |
 | `CheckForUpdatesAsync(CancellationToken)` | Проверка обновлений |
 | `ClearLocalCache()` | Очистить кэш |
@@ -468,6 +537,10 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `RequireLimit(string, string, int, Action, Action?)` | Лимит с fallback |
 | `IncrementUsageAsync(string, string, int, CancellationToken)` | v3: Инкремент usage для MaxPerDay/MaxPerMonth |
 | `GetCurrentUsageAsync(string, string, CancellationToken)` | v3: Текущий usage для MaxPerDay/MaxPerMonth |
+| `TryGetFeatureKey(string featureCode, string kid, out byte[]? material)` | 2.2.0: Ключевой материал возможности, синхронно из памяти |
+| `GetFeatureKeyAvailability(string featureCode, string kid)` | 2.2.0: Причина отсутствия материала, см. `FeatureKeyAvailability` |
+| `GetFeatureKeyAsync(string featureCode, string kid, TimeSpan timeout, CancellationToken)` | 2.2.0: Дожидается готовности продукта, затем отвечает как `TryGetFeatureKey` |
+| `ReleaseSessionWithResultAsync(CancellationToken)` | 2.2.0: Освободить Concurrent-сессию ЭТОГО продукта, с признаком результата |
 
 ### Guards (вспомогательные классы)
 

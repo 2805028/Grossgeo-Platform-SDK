@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- LGC-1052: у этого образца настроек нет ПО ЗАМЫСЛУ — он раздаётся голой DLL, а не
@@ -27,7 +27,7 @@
 
   <!-- GrossGeo SDK.Stub Reference -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.17" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->
