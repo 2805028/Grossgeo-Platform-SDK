@@ -2,7 +2,7 @@
 
 **Версия SDK:** 2.0 | **Платформа:** AutoCAD 2019+ | **.NET:** Framework 4.8 / .NET 8
 
-> ⚠️ **Уведомление (2026-05-08, DOC-033):** §6 «Манифест продукта (product-manifest.json)» описывает legacy-формат до BC-PR2/BC-PR3 (2026-05-06). Текущая модель — `plans-manifest.json` (импорт планов/фич через Dev Panel) + `release-manifest.json` (метаданные релиза внутри bundle). Актуальная спецификация: [docs/dev-portal-manifests.md](../dev-portal-manifests.md).
+> ⚠️ **Уведомление (2026-05-08, DOC-033):** §6 «Манифест продукта (product-manifest.json)» описывает legacy-формат до BC-PR2/BC-PR3 (2026-05-06). Текущая модель — `plans-manifest.json` (импорт планов/фич через Dev Panel) + `release-manifest.json` (метаданные релиза внутри bundle). Примеры обоих — в `plans-manifest.json`/`release-manifest.json` внутри любого из [samples](../samples/).
 
 ---
 
@@ -178,12 +178,15 @@ FeatureGuard.Require("batch", () => DoBatch());
 FeatureGuard.OrThrow("batch", () => DoBatch());
 ```
 
-### Public Features (доступны без лицензии)
+### Фичи, доступные без лицензии (`IsDefault`)
+
+`LoadPublicFeaturesAsync`/`IsPublicFeature` в SDK нет — удалены, отдельного обхода лицензии для
+таких фич не существует (решение владельца: отклонённый вердикт лицензии не выдаёт ничего, даже
+`IsDefault`-фичи). Фича с `"isDefault": true` в манифесте плана видна через тот же `HasFeature`,
+что и любая другая, — но только пока лицензия валидна:
 
 ```csharp
-await GrossGeoLicense.LoadPublicFeaturesAsync(productId);
-GrossGeoLicense.IsPublicFeature("basic-viewer"); // true
-GrossGeoLicense.HasFeature("basic-viewer");      // true даже без лицензии
+GrossGeoLicense.HasFeature("basic-viewer"); // true, если лицензия валидна и фича в плане
 ```
 
 ### Concurrent Sessions (плавающие лицензии)
@@ -401,6 +404,9 @@ MyPlugin/
 
 ### PackageContents.xml
 
+> При установке через каталог GrossGeo этот файл **генерирует User Panel** — ниже пример для
+> локальной разработки без каталога (`netload`, ручной bundle).
+
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <ApplicationPackage
@@ -449,6 +455,10 @@ MyPlugin/
 | 2023 | R24.2 | 4.8 |
 | 2024 | R24.3 | 4.8 |
 | 2025 | R25.0 | 8.0 |
+| 2026 | R25.1 | 8.0 |
+
+**AutoCAD 2027 (R26.0) не поддерживается и не проверялось** — нужен таргет .NET 10, которого в
+SDK нет (21.09, DOC-111).
 
 ---
 

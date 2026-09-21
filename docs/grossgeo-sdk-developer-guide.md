@@ -8,7 +8,7 @@
 > - **`plans-manifest.json`** — импорт планов и фич на существующий продукт через Developer Panel (грузится через UI).
 > - **`release-manifest.json`** — метаданные релиза, лежит **внутри bundle** и читается сервером при upload.
 >
-> Полная актуальная спецификация: [docs/dev-portal-manifests.md](../dev-portal-manifests.md). Полный sweep §14/§15 — отдельная задача (DOC-033 partial closure 2026-05-08).
+> `plans-manifest.json` разрабатывается в репозитории студии и загружается через Developer Panel; `release-manifest.json` формируется и кладётся внутрь `.bundle` при подготовке релиза. Примеры обоих форматов по каждому тарифному сценарию — в `plans-manifest.json`/`release-manifest.json` внутри любого из [samples](../samples/) (например, `samples/TestProduct.Subscription/` — для планов с триалом). Полный sweep §14/§15 — отдельная задача (DOC-033 partial closure 2026-05-08).
 
 ---
 
@@ -1384,7 +1384,12 @@ MyPlugin/
 
 ### PackageContents.xml
 
-Это файл, который AutoCAD читает для загрузки вашего плагина. Создайте его в папке `MyPlugin.bundle/`:
+Это файл, который AutoCAD читает для загрузки вашего плагина.
+
+> **Если распространение — через каталог GrossGeo** (стандартный путь), `PackageContents.xml`
+> **генерирует User Panel при установке** — писать его руками не нужно, это нужно только для
+> локальной разработки/отладки вне каталога (`netload`, ручной bundle). Создайте его в папке
+> `MyPlugin.bundle/`:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1451,6 +1456,13 @@ MyPlugin/
 | 2023 | 2023 | R24.2 | Framework 4.8 |
 | 2024 | 2024 | R24.3 | Framework 4.8 |
 | 2025 | 2025 | R25.0 | .NET 8.0 |
+| 2026 | 2026 | R25.1 | .NET 8.0 |
+
+**AutoCAD 2027 (R26.0) сегодня не поддерживается платформой и не проверялось** — потребует таргет
+.NET 10, которого в дереве SDK нет (координаты сверены 21.09, DOC-111); грузится ли фактически
+`net8`-сборка в среде .NET 10 форвард-совместимо — никто не измерял. Панель умеет ОБНАРУЖИВАТЬ
+установленный AutoCAD 2027 в реестре — это превентивная логика на случай, если участник поставит
+его раньше платформы, а не обещание рабочей поддержки.
 
 **Пример:** Если ваш плагин поддерживает AutoCAD 2021–2025:
 ```xml
@@ -1932,6 +1944,9 @@ var result = await GrossGeoLicense.Initialize(new LicenseOptions
 | `Initialize(LicenseOptions options)` | Асинхронная с параметрами |
 | `InitializeSync(string productKey)` | Синхронная инициализация |
 | `InitializeSync(LicenseOptions options)` | Синхронная с параметрами |
+| `WaitUntilReady(TimeSpan timeout)` | Синхронно дождаться результата первой проверки (не дольше `timeout`) |
+| `WhenReadyAsync(TimeSpan timeout, CancellationToken)` | Асинхронно дождаться результата первой проверки |
+| `ForProduct(string productKey)` | Получить [`ProductLicenseAccessor`](#класс-productlicenseaccessor-через-forproduct) — обёртку над лицензией конкретного продукта (для плагинов с несколькими продуктами в одном процессе) |
 | `Shutdown()` | Освобождение ресурсов |
 
 #### Свойства
@@ -1981,6 +1996,8 @@ var result = await GrossGeoLicense.Initialize(new LicenseOptions
 | `CheckLimit(string, string, int)` | Проверить лимит |
 | `RequireLimit(string, string, int, Action, Action<int>?)` | Мягкая проверка |
 | `RequireLimitOrThrow(string, string, int)` | Строгая (LimitExceededException) |
+| `IncrementUsageAsync(string featureCode, string limitCode, ...)` | Увеличить счётчик использования лимита |
+| `GetCurrentUsageAsync(string featureCode, string limitCode, ...)` | Прочитать текущее значение счётчика |
 
 #### Concurrent Sessions
 
@@ -1988,16 +2005,49 @@ var result = await GrossGeoLicense.Initialize(new LicenseOptions
 |------------------|----------|
 | `AcquireSessionAsync(string?, CancellationToken)` | Получить сессию |
 | `ReleaseSessionAsync(CancellationToken)` | Освободить сессию |
+| `ReleaseSessionWithResultAsync(CancellationToken)` | Освободить сессию, вернув результат операции (`SessionReleaseResult`) вместо `void` |
 | `SendSessionHeartbeatAsync(CancellationToken)` | Отправить heartbeat |
 | `SessionExpired` (event) | Событие потери сессии |
 
 #### Обновления
 
-| Метод | Описание |
+| Метод / Событие | Описание |
 |-------|----------|
+| `Check()` | Быстрая проверка (из памяти, без запроса к User Panel) |
 | `CheckForUpdatesAsync(CancellationToken)` | Проверить обновления |
+| `CheckAsync(CancellationToken)` | Проверить лицензию асинхронно (запрос к User Panel) |
 | `RefreshAsync(CancellationToken)` | Обновить данные лицензии |
 | `ClearLocalCache()` | Очистить локальный кэш |
+| `InvalidateCacheAsync(string? productKey, CancellationToken)` | Сбросить локальный кэш конкретного продукта (или активного, если `productKey` не задан) |
+| `CheckAndUpdateCacheVersion(long serverCacheVersion)` | Сверить версию кэша с сервером; `true`, если кэш был очищен из-за расхождения версий |
+| `LicenseRefreshed` (event) | Событие обновления данных лицензии (после `RefreshAsync`/`CheckAsync`/фонового опроса) |
+
+#### Навигация в User Panel
+
+| Метод | Описание |
+|-------|----------|
+| `OpenProductPageAsync(string? section, CancellationToken)` | Открыть страницу продукта в User Panel (опционально — конкретный раздел) |
+| `RequestTrialAsync(CancellationToken)` | Открыть в User Panel запуск триала для текущего продукта |
+
+### Класс `ProductLicenseAccessor` (через `ForProduct`)
+
+Возвращается `GrossGeoLicense.ForProduct(productKey)`. Даёт тот же набор операций, что статический
+`GrossGeoLicense`, но в области конкретного продукта — нужен плагинам, обслуживающим несколько
+продуктов в одном процессе (`GrossGeoLicense.*` без `ForProduct` всегда отвечает за «активный»/последний
+инициализированный продукт).
+
+| Категория | Члены |
+|-----------|-------|
+| Инициализация | `WhenReadyAsync`, `WaitUntilReady` |
+| Свойства | `ProductKey`, `LastResult`, `IsValid`, `PlanTier`, `BillingModel`, `LicenseMode`, `FeatureLimits`, `SessionToken`, `SessionExpiresAt`, `HasActiveSession`, `ExpiresAt`, `DaysRemaining`, `IsInGracePeriod`, `IsOfflineMode`, `Features` |
+| Ключи фич | `GetFeatureKeyAvailability`, `TryGetFeatureKey`, `GetFeatureKeyAsync` |
+| Защита | `HasFeature`, `GetFeatureLimit`, `CheckLimit`, `Protect` (3 перегрузки), `ProtectOrThrow`, `RequireFeature`, `RequireFeatureOrThrow`, `RequireLimit` |
+| Проверка/обновление | `Check`, `CheckAsync`, `RefreshAsync` |
+| Concurrent Sessions | `AcquireSessionAsync`, `ReleaseSessionAsync`, `ReleaseSessionWithResultAsync`, `SendSessionHeartbeatAsync` |
+| Usage-лимиты | `IncrementUsageAsync`, `GetCurrentUsageAsync` |
+
+Сигнатуры совпадают с одноимёнными статическими членами `GrossGeoLicense` выше — здесь не дублируются
+таблицами, чтобы не разойтись при правке одной из копий.
 
 ### Guard-классы
 

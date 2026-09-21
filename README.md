@@ -6,6 +6,21 @@
 Легковесный SDK (~25 KB) для лицензирования AutoCAD-плагинов через платформу GrossGeo.
 Поддерживает планы, features, лимиты, concurrent-сессии и офлайн-режим.
 
+> ⚠️ **Уведомление об устаревшей секции (2026-09-21, DOC-111, вслед за DOC-033 от 2026-05-08):**
+> раздел «Манифест продукта (`product-manifest.json`)» ниже описывает legacy-формат до
+> BC-PR2/BC-PR3 (2026-05-06). Текущая модель — два отдельных файла:
+> - **`plans-manifest.json`** — импорт планов и фич на существующий продукт через Developer Panel.
+> - **`release-manifest.json`** — метаданные релиза, лежит **внутри bundle** и читается сервером
+>   при upload.
+>
+> `plans-manifest.json` разрабатывается в репозитории студии и загружается через Developer Panel;
+> `release-manifest.json` формируется и кладётся внутрь `.bundle` при подготовке релиза. Оба
+> формата — с примерами по каждому тарифному сценарию — смотрите в `plans-manifest.json` и
+> `release-manifest.json` внутри любого из [samples](samples/) (например, `samples/TestProduct.Free/`
+> для простого случая, `samples/TestProduct.Subscription/` — для планов с триалом).
+> Справочник методов и свойств ниже (`API Reference`) в рамках этой же правки (DOC-111) сверен с
+> кодом и дополнен — устаревшим не является.
+
 ---
 
 ## Требования
@@ -475,6 +490,8 @@ new LicenseOptions
 |----------|-----|----------|
 | `IsInitialized` | `bool` | SDK инициализирован |
 | `HasActiveSession` | `bool` | Есть concurrent-сессия |
+| `SessionToken` | `string?` | Токен активной concurrent-сессии |
+| `SessionExpiresAt` | `DateTime?` | Срок действия сессии |
 
 ### ProductLicenseAccessor — свойства
 
@@ -497,6 +514,8 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `Features` | `IReadOnlyList<string>` | Список доступных features |
 | `FeatureLimits` | `IReadOnlyDictionary<string, int>?` | Лимиты фичей |
 | `HasActiveSession` | `bool` | Есть concurrent-сессия |
+| `SessionToken` | `string?` | Токен активной concurrent-сессии этого продукта |
+| `SessionExpiresAt` | `DateTime?` | Срок действия сессии |
 | `LastResult` | `LicenseResult?` | Последний результат проверки |
 
 ### GrossGeoLicense — методы
@@ -506,6 +525,8 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `Initialize(LicenseOptions)` | Async-инициализация |
 | `Initialize(string productKey)` | Упрощённая инициализация |
 | `InitializeSync(LicenseOptions)` | Синхронная инициализация |
+| `WaitUntilReady(TimeSpan timeout)` | Синхронно дождаться результата первой проверки (не дольше `timeout`) |
+| `WhenReadyAsync(TimeSpan timeout, CancellationToken)` | Асинхронно дождаться результата первой проверки |
 | `ForProduct(string productKey)` | Получить `ProductLicenseAccessor` для продукта |
 | `Shutdown()` | Завершение работы (все продукты) |
 | `Shutdown(string productKey)` | Завершение работы (конкретный продукт) |
@@ -513,17 +534,25 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `ReleaseSessionAsync(CancellationToken)` | Освободить сессию — не сообщает, подтвердил ли шлюз освобождение |
 | `ReleaseSessionWithResultAsync(CancellationToken)` | 2.2.0: то же, но с признаком результата (`SessionReleaseResult.IsSuccess`/`ErrorCode`) |
 | `SendSessionHeartbeatAsync()` | Отправить heartbeat |
+| `SessionExpired` (event) | Событие потери concurrent-сессии |
 | `CheckForUpdatesAsync(CancellationToken)` | Проверка обновлений |
 | `ClearLocalCache()` | Очистить кэш |
+| `InvalidateCacheAsync(string? productKey, CancellationToken)` | Сбросить кэш конкретного продукта (или активного, если `productKey` не задан) |
+| `CheckAndUpdateCacheVersion(long serverCacheVersion)` | Сверить версию кэша с сервером; `true`, если кэш очищен из-за расхождения версий |
+| `LicenseRefreshed` (event) | Событие обновления данных лицензии |
 | `IncrementUsageAsync(string, string, int, CancellationToken)` | v3: Инкремент usage (featureCode, limitCode, count) для текущего продукта |
 | `GetCurrentUsageAsync(string, string, CancellationToken)` | v3: Текущий usage (featureCode, limitCode) для текущего продукта |
 | `RequestTrialAsync(CancellationToken)` | Открыть панель на карточке продукта и запросить старт trial (с подтверждением; лицензию не активирует сама) |
 | `OpenProductPageAsync(string?, CancellationToken)` | Открыть панель на карточке продукта, опционально на секции (`purchase`, `reviews`) |
+| `Check()` | Быстрая проверка (из памяти), для текущего продукта |
+| `HasFeatureAsync(string, CancellationToken)` | Асинхронная проверка фичи, для текущего продукта |
 
 ### ProductLicenseAccessor — методы
 
 | Метод | Описание |
 |-------|----------|
+| `WaitUntilReady(TimeSpan timeout)` | Синхронно дождаться результата первой проверки этого продукта |
+| `WhenReadyAsync(TimeSpan timeout, CancellationToken)` | Асинхронно дождаться результата первой проверки этого продукта |
 | `Check()` | Быстрая проверка (из памяти) |
 | `CheckAsync(CancellationToken)` | Полная проверка (запрос к User Panel) |
 | `RefreshAsync(CancellationToken)` | Принудительное обновление |
@@ -540,7 +569,10 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `TryGetFeatureKey(string featureCode, string kid, out byte[]? material)` | 2.2.0: Ключевой материал возможности, синхронно из памяти |
 | `GetFeatureKeyAvailability(string featureCode, string kid)` | 2.2.0: Причина отсутствия материала, см. `FeatureKeyAvailability` |
 | `GetFeatureKeyAsync(string featureCode, string kid, TimeSpan timeout, CancellationToken)` | 2.2.0: Дожидается готовности продукта, затем отвечает как `TryGetFeatureKey` |
+| `AcquireSessionAsync(string?, CancellationToken)` | Получить concurrent-сессию ЭТОГО продукта |
+| `ReleaseSessionAsync(CancellationToken)` | Освободить сессию ЭТОГО продукта |
 | `ReleaseSessionWithResultAsync(CancellationToken)` | 2.2.0: Освободить Concurrent-сессию ЭТОГО продукта, с признаком результата |
+| `SendSessionHeartbeatAsync(CancellationToken)` | Отправить heartbeat для сессии ЭТОГО продукта |
 
 ### Guards (вспомогательные классы)
 

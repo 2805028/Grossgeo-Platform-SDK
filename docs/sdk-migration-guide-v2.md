@@ -259,7 +259,7 @@ public async void OnTrialButtonClick()
 }
 ```
 
-`RequestTrialAsync()` **не активирует лицензию сама** — она открывает панель, а панель сама показывает подтверждение и стартует trial только если сервер это разрешает (`CanStartTrial=true`). Подробнее (включая URI-форму `grossgeo://start-trial/{productKey}` для непанельных сценариев) — [docs/external/grossgeo-sdk-deeplinks-guide.md](external/grossgeo-sdk-deeplinks-guide.md).
+`RequestTrialAsync()` **не активирует лицензию сама** — она открывает панель, а панель сама показывает подтверждение и стартует trial только если сервер это разрешает (`CanStartTrial=true`). Подробнее (включая URI-форму `grossgeo://start-trial/{productKey}` для непанельных сценариев) — [grossgeo-sdk-deeplinks-guide.md](grossgeo-sdk-deeplinks-guide.md).
 
 ---
 
