@@ -5,6 +5,19 @@ All notable changes to GrossGeo.SDK.Stub will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-09-23
+
+### Changed
+- **Docs only, no code changes.** README and the developer guide said a `net8.0-windows` build
+  "loads and runs" in AutoCAD 2027 / Civil 3D 2027 and left declaring that support up to the
+  reader after their own testing (`LGC-1333`). That measured whether the build loads, not
+  whether it is binary-compatible. Per Autodesk, a `net8.0-windows` build is NOT binary-compatible
+  with AutoCAD 2027 itself, even where it does load — full recompile required. This is specific to
+  AutoCAD 2027, not to running on a .NET 10 host in general: `net8.0-windows` builds load and run
+  normally on AutoCAD 2026.1.2 and 2025 U1.4, which also host .NET 10. AutoCAD 2027 requires a
+  build targeting `net10.0-windows` (already supported since `2.2.0`); `net8.0-windows` is not
+  supported for it.
+
 ## [2.2.1] - 2026-09-23
 
 ### Fixed

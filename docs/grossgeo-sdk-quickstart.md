@@ -11,7 +11,7 @@
 ### NuGet
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.1" />
 ```
 
 Зависимость `GrossGeo.Contracts` подтянется автоматически.
@@ -390,7 +390,7 @@ MyPlugin/
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.1" />
   </ItemGroup>
 
   <!-- AutoCAD References -->
@@ -458,9 +458,12 @@ MyPlugin/
 | 2026 | R25.1 | 8.0 |
 | 2027 | R26.0 | 10.0 |
 
-**AutoCAD 2027 (R26.0) работает на .NET 10.** Продукт, собранный под .NET 8, по замеру 23.09.2026
-загружается и в 2027 — но объявляйте 2027 только проверив продукт на нём. Подробнее и пример
-манифеста под .NET 10 — в руководстве разработчика, раздел «Таблица версий AutoCAD».
+**AutoCAD 2027 (R26.0) работает на .NET 10 — для него требуется сборка под `net10.0-windows`;
+сборка под .NET 8 не поддерживается.** По замеру 23.09.2026 она физически загружается и в 2027,
+но по данным Autodesk не совместима с AutoCAD 2027 — нужна пересборка под `net10.0-windows`
+(несовместимость с самим AutoCAD 2027, не с хостом .NET 10 как таковым: на AutoCAD 2026.1.2 и
+2025 U1.4, тоже на .NET 10, `net8`-сборки грузятся штатно). Подробнее и пример манифеста под
+.NET 10 — в руководстве разработчика, раздел «Таблица версий AutoCAD».
 
 ---
 
