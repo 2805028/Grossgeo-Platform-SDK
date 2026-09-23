@@ -39,7 +39,7 @@
 
   <!-- GrossGeo SDK.Stub Reference -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.1" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET 8 (AutoCAD 2025+) -->

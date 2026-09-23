@@ -38,7 +38,7 @@ SDK v2 вводит новую модель лицензирования: **Plan
 <PackageReference Include="GrossGeo.SDK.Stub" Version="1.*" />
 
 <!-- СТАЛО -->
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.17" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
 ```
 
 Версия закрепляется точно. Диапазон `2.*` разрешается в любую версию ветки 2 — в том числе в

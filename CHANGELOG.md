@@ -5,6 +5,20 @@ All notable changes to GrossGeo.SDK.Stub will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-09-23
+
+### Fixed
+- **`SessionExpired` reported a fixed `HEARTBEAT_FAILED` code/text after repeated heartbeat
+  failures, regardless of the real reason the gateway refused the heartbeat (`LGC-1316`).**
+  `SendSessionHeartbeatForProductAsync` read the response's `ErrorCode`/`ErrorMessage` only for
+  its own diagnostic log and discarded them before raising `SessionExpired` — a revoked licence,
+  a normally-ended session, an internal panel error and a lost connection all surfaced to your
+  product as the same literal string. The event now carries the value the gateway actually
+  returned, falling back to the previous literals only when the response supplied none.
+  `SessionExpiredEventArgs` itself did not change (same two string properties); a product that
+  branches on this event's `ErrorCode` will start seeing values it has not seen from it before —
+  most notably `LICENSE_NOT_ACTIVE` for a revoked/blocked licence.
+
 ## [2.2.0] - 2026-09-19
 
 ### Fixed

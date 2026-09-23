@@ -479,6 +479,16 @@ namespace TestProduct.Freemium
                 return;
             }
 
+            // LGC-1198: право проверяется ДО демонстрации — без этого отказ сервера
+            // (FEATURE_NOT_AVAILABLE) ниже читался как «операция выполнена, но usage
+            // не обновлён», хотя причина — права на batch-processing нет вовсе.
+            if (!License.HasFeature("batch-processing"))
+            {
+                WriteMessage("\n🔒 Пакетная обработка (batch-processing) недоступна на вашем плане.");
+                WriteMessage("   Обновитесь до PRO: GGFMUPGRADE");
+                return;
+            }
+
             try
             {
                 WriteMessage("\n═══ Usage Tracking Demo (v3) ═══");

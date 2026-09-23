@@ -94,7 +94,7 @@ SDK — это тонкий клиент (~25 КБ). Он не содержит 
 | Visual Studio | 2022+ | Разработка |
 | .NET SDK | 8.0 | Сборка проекта |
 | .NET Framework | 4.8 Developer Pack | Если плагин для AutoCAD 2019–2024 |
-| AutoCAD / Civil 3D | 2019–2025 | Тестирование |
+| AutoCAD / Civil 3D | 2019–2027 | Тестирование |
 | GrossGeo User Panel | 2.0+ | Тестирование лицензирования |
 
 ### У конечного пользователя
@@ -102,7 +102,7 @@ SDK — это тонкий клиент (~25 КБ). Он не содержит 
 | Компонент | Версия |
 |-----------|--------|
 | Windows | 10/11 x64 |
-| AutoCAD / Civil 3D | 2019–2025 |
+| AutoCAD / Civil 3D | 2019–2027 |
 | GrossGeo User Panel | 2.0+ (должен быть установлен и запущен) |
 
 > **Важно:** User Panel — это отдельное приложение, которое пользователь устанавливает один раз. Все ваши плагины используют один и тот же User Panel.
@@ -116,7 +116,7 @@ SDK — это тонкий клиент (~25 КБ). Он не содержит 
 В файле `.csproj` вашего плагина добавьте:
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.17" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
 ```
 
 **Версия закреплена точно, и это не перестраховка.** Плавающий диапазон `2.*` разрешается в
@@ -183,7 +183,7 @@ NuGet автоматически подтянет зависимость `GrossG
 
   <!-- GrossGeo SDK -->
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.1.17" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.0" />
   </ItemGroup>
 
   <!-- AutoCAD References для .NET Framework 4.8 (AutoCAD 2019-2024) -->
@@ -1457,12 +1457,31 @@ MyPlugin/
 | 2024 | 2024 | R24.3 | Framework 4.8 |
 | 2025 | 2025 | R25.0 | .NET 8.0 |
 | 2026 | 2026 | R25.1 | .NET 8.0 |
+| 2027 | 2027 | R26.0 | .NET 10.0 |
 
-**AutoCAD 2027 (R26.0) сегодня не поддерживается платформой и не проверялось** — потребует таргет
-.NET 10, которого в дереве SDK нет (координаты сверены 21.09, DOC-111); грузится ли фактически
-`net8`-сборка в среде .NET 10 форвард-совместимо — никто не измерял. Панель умеет ОБНАРУЖИВАТЬ
-установленный AutoCAD 2027 в реестре — это превентивная логика на случай, если участник поставит
-его раньше платформы, а не обещание рабочей поддержки.
+**AutoCAD 2027 (R26.0) работает на .NET 10** — сборки AutoCAD 2027 помечены `.NETCoreApp v10.0`,
+пакет `AutoCAD.NET 26.0.0` собран только под `net10.0`. Родная цель для него — `net10.0-windows`.
+
+**Сборка под `net8` в AutoCAD 2027 загружается** — замер 23.09.2026: продукт под `net8.0-windows` с
+этим SDK, собранный против API AutoCAD 2025, загрузился и отработал в AutoCAD 2027 и Civil 3D 2027.
+Поэтому объявить 2027 для `net8`-сборки можно, но это ваше решение после проверки на 2027: API
+AutoCAD 2027 — это `AutoCAD.NET 26.0.0`, и вызов, который в нём изменился, упадёт уже у участника.
+Портал в таком случае предупреждает, но не отказывает.
+
+**Загрузка в AutoCAD 2027 — замер 23.09.2026** (AutoCAD 2027, `SECURELOAD=1` — значение AutoCAD по
+умолчанию): неподписанная сборка продукта из каталога, которого нет в доверенных путях
+(`TRUSTEDPATHS`), вызывает окно безопасности AutoCAD «исполняемый файл без подписи… не в доверенной
+папке» и без подтверждения пользователя не загружается. Подписанную сборку этот замер не проверял.
+
+Если в бандле две сборки — под `net8` и под `net10` — объявите каждой свою полосу, без пересечения:
+```xml
+<ComponentEntry AppName="MyPlugin" ModuleName="./Contents/net8/MyPlugin.dll" AppType=".Net" LoadOnAutoCADStartup="True">
+  <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R25.0" SeriesMax="R25.1"/>
+</ComponentEntry>
+<ComponentEntry AppName="MyPlugin" ModuleName="./Contents/net10/MyPlugin.dll" AppType=".Net" LoadOnAutoCADStartup="True">
+  <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R26.0" SeriesMax="R26.0"/>
+</ComponentEntry>
+```
 
 **Пример:** Если ваш плагин поддерживает AutoCAD 2021–2025:
 ```xml
