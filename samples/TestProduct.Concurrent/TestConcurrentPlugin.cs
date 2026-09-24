@@ -32,10 +32,17 @@ namespace TestProduct.Concurrent
         private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(ProductKey);
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        // LGC-1350: диспетчер главного потока AutoCAD, запомненный в Initialize.
+        private static System.Windows.Threading.Dispatcher? _ui;
+
         #region IExtensionApplication
 
         public void Initialize()
         {
+            // LGC-1350: главный поток запоминается ЗДЕСЬ — синхронно, до первого await и не в Task.Run.
+            // Вывод из продолжений после await идёт через него (WriteMessage → RunOnMainThread).
+            _ui = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
             WriteMessage("\n╔══════════════════════════════════════════════════════════════╗");
             WriteMessage("║  🔁 TEST PRODUCT CONCURRENT v1.0.0                            ║");
             WriteMessage("║  Multi-tier + Concurrent Sessions                              ║");
@@ -50,12 +57,9 @@ namespace TestProduct.Concurrent
 
         public void Terminate()
         {
-            // v2: Освобождаем concurrent-сессию при выгрузке
-            if (License.HasActiveSession)
-            {
-                _ = License.ReleaseSessionAsync();
-            }
-
+            // Shutdown(ProductKey) сам освобождает concurrent-сессию продукта и ждёт панель не дольше
+            // 2 с. Отдельный ReleaseSessionAsync здесь не нужен: на .NET Framework он исполняется
+            // синхронно на главном потоке AutoCAD и при зависшей панели держит выход без срока (LGC-1351).
             GrossGeoLicense.Shutdown(ProductKey);
         }
 
@@ -139,8 +143,49 @@ namespace TestProduct.Concurrent
 
         private static void OnSessionExpired(object? sender, SessionExpiredEventArgs e)
         {
-            WriteMessage($"\n[SDK] ⚠️ SESSION EXPIRED: {e.Message}");
-            WriteMessage("[SDK] Сессия потеряна. Попробуйте GGCONCSESSION для получения новой.");
+            // LGC-1350: событие приходит с потока таймера heartbeat, а API AutoCAD (Editor) — только
+            // с главного потока. Вывод уходит через диспетчер главного потока, запомненный в Initialize.
+            RunOnMainThread(() =>
+            {
+                WriteMessage($"\n[SDK] ⚠️ SESSION EXPIRED: {e.Message}");
+                WriteMessage("[SDK] Сессия потеряна. Попробуйте GGCONCSESSION для получения новой.");
+            });
+        }
+
+        /// <summary>
+        /// LGC-1350: выполнить действие на главном потоке AutoCAD через диспетчер, запомненный в
+        /// <see cref="Initialize"/>. Сюда приходят и из продолжений после <c>await</c> (поток пула), и из
+        /// событий SDK (<c>SessionExpired</c> — поток таймера), а API AutoCAD — только с главного потока.
+        /// <c>Dispatcher.BeginInvoke</c> безопасен с любого потока; на главном потоке действие идёт сразу.
+        /// </summary>
+        private static void RunOnMainThread(Action action)
+        {
+            var ui = _ui;
+            if (ui == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[TestProduct.Concurrent] главный поток не запомнен в Initialize — вывод пропущен");
+                return;
+            }
+
+            if (ui.CheckAccess())
+            {
+                RunSafely(action);
+                return;
+            }
+
+            ui.BeginInvoke(new Action(() => RunSafely(action)));
+        }
+
+        private static void RunSafely(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TestProduct.Concurrent] {ex}");
+            }
         }
 
         #endregion
@@ -515,7 +560,8 @@ namespace TestProduct.Concurrent
 
         private static void WriteMessage(string message)
         {
-            Ed?.WriteMessage($"\n{message}");
+            // LGC-1350: сюда приходят и из продолжений после await — AutoCAD API только с главного потока.
+            RunOnMainThread(() => Ed?.WriteMessage($"\n{message}"));
         }
 
         private static string MaskKey(string key)

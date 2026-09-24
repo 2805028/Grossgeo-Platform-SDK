@@ -258,14 +258,23 @@ namespace MyPlugin
         private static Editor? Ed =>
             Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        // Главный поток AutoCAD — Control, созданный в Initialize (см. RunOnMainThread).
+        private static System.Windows.Forms.Control? _ui;
+
         /// <summary>
         /// Вызывается AutoCAD при загрузке плагина.
         /// </summary>
         public void Initialize()
         {
+            // Главный поток запоминаем ЗДЕСЬ — синхронно, до первого await и не в Task.Run.
+            _ui = new System.Windows.Forms.Control();
+            _ = _ui.Handle;
+
             Ed?.WriteMessage("\n[MyPlugin] Загрузка...");
 
-            // Инициализируем SDK в фоновом потоке, чтобы не блокировать AutoCAD
+            // Инициализируем SDK в фоновом потоке, чтобы не блокировать AutoCAD.
+            // Внутри Task.Run мы НЕ на главном потоке: Editor и прочий AutoCAD API
+            // трогать только через RunOnMainThread (ниже).
             _ = Task.Run(async () =>
             {
                 try
@@ -278,15 +287,60 @@ namespace MyPlugin
                     });
 
                     if (result.IsValid)
-                        Ed?.WriteMessage("\n[MyPlugin] Лицензия активна!");
+                        RunOnMainThread(() => Ed?.WriteMessage("\n[MyPlugin] Лицензия активна!"));
                     else
-                        Ed?.WriteMessage($"\n[MyPlugin] Лицензия: {result.Message}");
+                        RunOnMainThread(() => Ed?.WriteMessage($"\n[MyPlugin] Лицензия: {result.Message}"));
                 }
                 catch (Exception ex)
                 {
-                    Ed?.WriteMessage($"\n[MyPlugin] Ошибка SDK: {ex.Message}");
+                    RunOnMainThread(() => Ed?.WriteMessage($"\n[MyPlugin] Ошибка SDK: {ex.Message}"));
                 }
             });
+        }
+
+        /// <summary>
+        /// Выполнить действие на главном потоке AutoCAD через Control, созданный в Initialize.
+        /// Нужна везде, где код идёт с фонового потока: после await (в Task.Run и в async-командах)
+        /// и в обработчиках событий SDK (SessionExpired, LicenseRefreshed). InvokeRequired и BeginInvoke
+        /// безопасны с любого потока; на главном потоке действие выполняется сразу. Исключение действия
+        /// ловится здесь: на главном потоке оно уронило бы AutoCAD.
+        /// </summary>
+        private static void RunOnMainThread(Action action)
+        {
+            var ui = _ui;
+            if (ui == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[MyPlugin] главный поток не запомнен в Initialize — вывод пропущен");
+                return;
+            }
+
+            if (!ui.InvokeRequired)
+            {
+                RunSafely(action);
+                return;
+            }
+
+            try
+            {
+                ui.BeginInvoke(new Action(() => RunSafely(action)));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Control уже уничтожен — AutoCAD закрывается.
+                System.Diagnostics.Debug.WriteLine($"[MyPlugin] вывод не доставлен: {ex.Message}");
+            }
+        }
+
+        private static void RunSafely(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MyPlugin] {ex}");
+            }
         }
 
         /// <summary>
@@ -332,6 +386,13 @@ namespace MyPlugin
     }
 }
 ```
+
+> **Какой приём выбрать.** В WinForms-проекте — `System.Windows.Forms.Control`, как выше (net48:
+> `<Reference Include="System.Windows.Forms" />`, net8: `<UseWindowsForms>true</UseWindowsForms>`); в WPF-проекте —
+> `System.Windows.Threading.Dispatcher.CurrentDispatcher`, запомненный в `Initialize`, с `CheckAccess()`/`BeginInvoke`
+> (так сделано в образцах `Samples/`). В обоих случаях захват — синхронно в `Initialize`, до первого `await`: иначе
+> запомнится поток пула. Пишите тип полным именем — в одном файле с `Autodesk.AutoCAD.ApplicationServices` не должно
+> быть второго `Application`.
 
 ### Шаг 4. Соберите проект
 
@@ -905,6 +966,10 @@ Concurrent (плавающие) лицензии позволяют органи
 ```csharp
 public void Initialize()
 {
+    // Главный поток — запомнить ЗДЕСЬ, до Task.Run (RunOnMainThread — раздел 5, шаг 3).
+    _ui = new System.Windows.Forms.Control();
+    _ = _ui.Handle;
+
     _ = Task.Run(async () =>
     {
         var result = await GrossGeoLicense.Initialize(options);
@@ -917,24 +982,78 @@ public void Initialize()
             var session = await GrossGeoLicense.AcquireSessionAsync(
                 clientInfo: Environment.MachineName); // передаём имя машины
 
+            // Мы в Task.Run — не на главном потоке AutoCAD: вывод через RunOnMainThread (ниже).
             if (session.IsSuccess)
             {
-                Ed?.WriteMessage("\n[MyPlugin] Сессия получена!");
+                RunOnMainThread(() => Ed?.WriteMessage("\n[MyPlugin] Сессия получена!"));
             }
             else
             {
-                Ed?.WriteMessage($"\n[MyPlugin] Нет свободных слотов: {session.ErrorMessage}");
-                Ed?.WriteMessage("\n[MyPlugin] Попросите коллегу закрыть AutoCAD.");
+                RunOnMainThread(() =>
+                {
+                    Ed?.WriteMessage($"\n[MyPlugin] Нет свободных слотов: {session.ErrorMessage}");
+                    Ed?.WriteMessage("\n[MyPlugin] Попросите коллегу закрыть AutoCAD.");
+                });
             }
         }
     });
 
-    // Обработка потери сессии (таймаут, сессия отнята администратором)
-    GrossGeoLicense.SessionExpired += (sender, e) =>
+    // Обработка потери сессии (таймаут, сессия отнята администратором).
+    // Событие приходит с ФОНОВОГО потока (таймер heartbeat), а API AutoCAD — только с главного:
+    // вывод уходит через Control главного потока, созданный в Initialize.
+    GrossGeoLicense.SessionExpired += (sender, e) => RunOnMainThread(() =>
     {
         Ed?.WriteMessage($"\n[MyPlugin] ⚠ Сессия потеряна: {e.Message}");
         Ed?.WriteMessage("\n[MyPlugin] Защищённые команды недоступны.");
-    };
+    });
+}
+
+// Главный поток AutoCAD — Control, созданный в Initialize (см. RunOnMainThread).
+private static System.Windows.Forms.Control? _ui;
+
+/// <summary>
+/// Выполнить действие на главном потоке AutoCAD через Control, созданный в Initialize.
+/// Нужна везде, где код идёт с фонового потока: после await (в Task.Run и в async-командах)
+/// и в обработчиках событий SDK (SessionExpired, LicenseRefreshed). InvokeRequired и BeginInvoke
+/// безопасны с любого потока; на главном потоке действие выполняется сразу. Исключение действия
+/// ловится здесь: на главном потоке оно уронило бы AutoCAD.
+/// </summary>
+private static void RunOnMainThread(Action action)
+{
+    var ui = _ui;
+    if (ui == null)
+    {
+        System.Diagnostics.Debug.WriteLine("[MyPlugin] главный поток не запомнен в Initialize — вывод пропущен");
+        return;
+    }
+
+    if (!ui.InvokeRequired)
+    {
+        RunSafely(action);
+        return;
+    }
+
+    try
+    {
+        ui.BeginInvoke(new Action(() => RunSafely(action)));
+    }
+    catch (InvalidOperationException ex)
+    {
+        // Control уже уничтожен — AutoCAD закрывается.
+        System.Diagnostics.Debug.WriteLine($"[MyPlugin] вывод не доставлен: {ex.Message}");
+    }
+}
+
+private static void RunSafely(Action action)
+{
+    try
+    {
+        action();
+    }
+    catch (Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"[MyPlugin] {ex}");
+    }
 }
 ```
 
@@ -952,13 +1071,9 @@ GrossGeoLicense.SessionExpiresAt      // DateTime? — когда истечёт
 ```csharp
 public void Terminate()
 {
-    // ОБЯЗАТЕЛЬНО освободите слот при выгрузке!
-    if (GrossGeoLicense.HasActiveSession)
-    {
-        // Wait() т.к. Terminate() синхронный
-        GrossGeoLicense.ReleaseSessionAsync().Wait();
-    }
-
+    // Shutdown сам освобождает слот Concurrent-сессии и ждёт панель не дольше 2 с.
+    // Не зовите здесь ReleaseSessionAsync().Wait(): Terminate идёт на главном потоке AutoCAD,
+    // и ожидание держало бы его выход до 20 с, а на .NET Framework при зависшей панели — без конца.
     GrossGeoLicense.Shutdown();
 }
 ```
@@ -975,28 +1090,33 @@ SDK может проверить, есть ли новая версия ваш�
 [CommandMethod("CHECK_UPDATES")]
 public async void CheckUpdates()
 {
+    // После await продолжение может прийти не на главный поток — весь вывод через
+    // RunOnMainThread (раздел 5, шаг 3), где бы ни пришло продолжение.
     try
     {
         var update = await GrossGeoLicense.CheckForUpdatesAsync();
 
-        if (update.HasUpdate)
+        RunOnMainThread(() =>
         {
-            Ed?.WriteMessage($"\nДоступна новая версия: {update.AvailableVersion}");
-            Ed?.WriteMessage($"\nОпубликована: {update.PublishedAt:dd.MM.yyyy}");
+            if (update.HasUpdate)
+            {
+                Ed?.WriteMessage($"\nДоступна новая версия: {update.AvailableVersion}");
+                Ed?.WriteMessage($"\nОпубликована: {update.PublishedAt:dd.MM.yyyy}");
 
-            if (!string.IsNullOrEmpty(update.Changelog))
-                Ed?.WriteMessage($"\nИзменения: {update.Changelog}");
+                if (!string.IsNullOrEmpty(update.Changelog))
+                    Ed?.WriteMessage($"\nИзменения: {update.Changelog}");
 
-            Ed?.WriteMessage("\nОбновите плагин через GrossGeo User Panel.");
-        }
-        else
-        {
-            Ed?.WriteMessage("\nУ вас последняя версия.");
-        }
+                Ed?.WriteMessage("\nОбновите плагин через GrossGeo User Panel.");
+            }
+            else
+            {
+                Ed?.WriteMessage("\nУ вас последняя версия.");
+            }
+        });
     }
     catch (Exception ex)
     {
-        Ed?.WriteMessage($"\nОшибка проверки обновлений: {ex.Message}");
+        RunOnMainThread(() => Ed?.WriteMessage($"\nОшибка проверки обновлений: {ex.Message}"));
     }
 }
 ```
@@ -1012,6 +1132,11 @@ public async void CheckUpdates()
 ---
 
 ## 13. Бизнес-модели — полные примеры
+
+> Во всех примерах ниже вывод в `Editor` после `await` внутри `Task.Run` идёт через
+> `RunOnMainThread`: этот поток не главный, а AutoCAD API вызывается только с главного.
+> Сам метод (Control, созданный в `Initialize`, и `BeginInvoke`) — в разделе 5, шаг 3; добавьте
+> в класс плагина и его, и поле `_ui` (захват `_ui` в начале `Initialize` в примерах уже есть).
 
 ### 13.1 Free — полностью бесплатный продукт
 
@@ -1063,6 +1188,10 @@ public class FreemiumPlugin : IExtensionApplication
 
     public void Initialize()
     {
+        // Главный поток — запомнить ЗДЕСЬ, до Task.Run (RunOnMainThread — раздел 5, шаг 3).
+        _ui = new System.Windows.Forms.Control();
+        _ = _ui.Handle;
+
         _ = Task.Run(async () =>
         {
             var result = await GrossGeoLicense.Initialize(new LicenseOptions
@@ -1073,7 +1202,7 @@ public class FreemiumPlugin : IExtensionApplication
 
             // Free: PlanTier = Free, BillingModel = Free
             // Pro:  PlanTier = Pro,  BillingModel = Subscription
-            Ed?.WriteMessage($"\n[Plugin] План: {result.PlanTier}");
+            RunOnMainThread(() => Ed?.WriteMessage($"\n[Plugin] План: {result.PlanTier}"));
         });
     }
 
@@ -1164,6 +1293,10 @@ public class SubscriptionPlugin : IExtensionApplication
 
     public void Initialize()
     {
+        // Главный поток — запомнить ЗДЕСЬ, до Task.Run (RunOnMainThread — раздел 5, шаг 3).
+        _ui = new System.Windows.Forms.Control();
+        _ = _ui.Handle;
+
         _ = Task.Run(async () =>
         {
             var result = await GrossGeoLicense.Initialize(new LicenseOptions
@@ -1174,17 +1307,20 @@ public class SubscriptionPlugin : IExtensionApplication
             });
 
             // PlanTier = Pro, BillingModel = Subscription
-            if (result.IsValid)
+            RunOnMainThread(() =>
             {
-                Ed?.WriteMessage("\n[Plugin] Подписка активна!");
-                Ed?.WriteMessage($"\n[Plugin] Истекает: " +
-                    $"{result.ExpiresAt:dd.MM.yyyy} ({result.DaysRemaining} дней)");
-            }
-            else
-            {
-                Ed?.WriteMessage("\n[Plugin] Подписка не найдена или истекла.");
-                Ed?.WriteMessage("\n[Plugin] Оформите подписку в GrossGeo User Panel.");
-            }
+                if (result.IsValid)
+                {
+                    Ed?.WriteMessage("\n[Plugin] Подписка активна!");
+                    Ed?.WriteMessage($"\n[Plugin] Истекает: " +
+                        $"{result.ExpiresAt:dd.MM.yyyy} ({result.DaysRemaining} дней)");
+                }
+                else
+                {
+                    Ed?.WriteMessage("\n[Plugin] Подписка не найдена или истекла.");
+                    Ed?.WriteMessage("\n[Plugin] Оформите подписку в GrossGeo User Panel.");
+                }
+            });
         });
     }
 
@@ -1239,6 +1375,10 @@ public class PerpetualPlugin : IExtensionApplication
 
     public void Initialize()
     {
+        // Главный поток — запомнить ЗДЕСЬ, до Task.Run (RunOnMainThread — раздел 5, шаг 3).
+        _ui = new System.Windows.Forms.Control();
+        _ = _ui.Handle;
+
         _ = Task.Run(async () =>
         {
             var result = await GrossGeoLicense.Initialize(new LicenseOptions
@@ -1251,15 +1391,18 @@ public class PerpetualPlugin : IExtensionApplication
             // PlanTier = Pro, BillingModel = Perpetual
             if (result.IsValid)
             {
-                Ed?.WriteMessage("\n[Plugin] Лицензия активна (бессрочная)!");
-                Ed?.WriteMessage($"\n[Plugin] План: {result.PlanTier}");
+                RunOnMainThread(() =>
+                {
+                    Ed?.WriteMessage("\n[Plugin] Лицензия активна (бессрочная)!");
+                    Ed?.WriteMessage($"\n[Plugin] План: {result.PlanTier}");
+                });
 
                 // Проверить доступность обновлений
                 var upd = await GrossGeoLicense.CheckForUpdatesAsync();
                 if (upd.HasUpdate)
-                    Ed?.WriteMessage(
+                    RunOnMainThread(() => Ed?.WriteMessage(
                         $"\n[Plugin] Доступна v{upd.AvailableVersion} " +
-                        "(требуется Maintenance).");
+                        "(требуется Maintenance)."));
             }
         });
     }
@@ -1302,6 +1445,10 @@ public class ConcurrentPlugin : IExtensionApplication
 
     public void Initialize()
     {
+        // Главный поток — запомнить ЗДЕСЬ, до Task.Run (RunOnMainThread — раздел 5, шаг 3).
+        _ui = new System.Windows.Forms.Control();
+        _ = _ui.Handle;
+
         _ = Task.Run(async () =>
         {
             var result = await GrossGeoLicense.Initialize(new LicenseOptions
@@ -1319,29 +1466,28 @@ public class ConcurrentPlugin : IExtensionApplication
 
                 if (session.IsSuccess)
                 {
-                    Ed?.WriteMessage("\n[Plugin] Сессия получена.");
+                    RunOnMainThread(() => Ed?.WriteMessage("\n[Plugin] Сессия получена."));
                 }
                 else
                 {
-                    Ed?.WriteMessage($"\n[Plugin] Нет свободных слотов: " +
-                        $"{session.ErrorMessage}");
+                    RunOnMainThread(() => Ed?.WriteMessage($"\n[Plugin] Нет свободных слотов: " +
+                        $"{session.ErrorMessage}"));
                 }
             }
         });
 
-        // Реагируем на потерю сессии
-        GrossGeoLicense.SessionExpired += (s, e) =>
+        // Реагируем на потерю сессии: событие приходит с фонового потока, в Editor пишем
+        // через главный поток (RunOnMainThread — Control, созданный в Initialize,
+        // см. раздел 5, шаг 3).
+        GrossGeoLicense.SessionExpired += (s, e) => RunOnMainThread(() =>
         {
             Ed?.WriteMessage($"\n[Plugin] ⚠ Сессия потеряна: {e.Message}");
-        };
+        });
     }
 
     public void Terminate()
     {
-        // Освобождаем слот
-        if (GrossGeoLicense.HasActiveSession)
-            GrossGeoLicense.ReleaseSessionAsync().Wait();
-
+        // Shutdown сам освобождает слот и ждёт панель не дольше 2 с (раздел 11, «Освобождение сессии»).
         GrossGeoLicense.Shutdown();
     }
 
@@ -1469,7 +1615,8 @@ AutoCAD 2027, и в Civil 3D 2027 — более ранняя редакция �
 не совместима с AutoCAD 2027 — нужна пересборка под `net10.0-windows`. Дело не в хосте .NET 10
 как таковом: на AutoCAD 2026.1.2 и 2025 U1.4, тоже на хосте .NET 10, `net8`-сборки грузятся
 штатно, несовместимость — именно с AutoCAD 2027. Объявляйте 2027 только сборкой под
-`net10.0-windows`.
+`net10.0-windows`: выпуск, где у `net8` серии выше `R25.x`, сервер отвергает, а портал таких серий
+для `net8` не предлагает.
 
 **Загрузка в AutoCAD 2027 — замер 23.09.2026** (AutoCAD 2027, `SECURELOAD=1` — значение AutoCAD по
 умолчанию): неподписанная сборка продукта из каталога, которого нет в доверенных путях

@@ -30,10 +30,17 @@ namespace TestProduct.Freemium
         private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(ProductKey);
         private static Editor? Ed => Application.DocumentManager?.MdiActiveDocument?.Editor;
 
+        // LGC-1350: диспетчер главного потока AutoCAD, запомненный в Initialize.
+        private static System.Windows.Threading.Dispatcher? _ui;
+
         #region IExtensionApplication
 
         public void Initialize()
         {
+            // LGC-1350: главный поток запоминается ЗДЕСЬ — синхронно, до первого await и не в Task.Run.
+            // Вывод из продолжений после await идёт через него (WriteMessage → RunOnMainThread).
+            _ui = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
             WriteMessage("\n╔══════════════════════════════════════════════════════════════╗");
             WriteMessage("║  ⭐ TEST PRODUCT FREEMIUM v1.1.0                               ║");
             WriteMessage("║  Базовые функции бесплатно, PRO по подписке                   ║");
@@ -605,7 +612,44 @@ namespace TestProduct.Freemium
 
         private static void WriteMessage(string message)
         {
-            Ed?.WriteMessage($"\n{message}");
+            // LGC-1350: сюда приходят и из продолжений после await — AutoCAD API только с главного потока.
+            RunOnMainThread(() => Ed?.WriteMessage($"\n{message}"));
+        }
+
+        /// <summary>
+        /// LGC-1350: выполнить действие на главном потоке AutoCAD через диспетчер, запомненный в
+        /// <see cref="Initialize"/>. Сюда приходят и из продолжений после <c>await</c> (поток пула), и из
+        /// событий SDK (<c>SessionExpired</c> — поток таймера), а API AutoCAD — только с главного потока.
+        /// <c>Dispatcher.BeginInvoke</c> безопасен с любого потока; на главном потоке действие идёт сразу.
+        /// </summary>
+        private static void RunOnMainThread(Action action)
+        {
+            var ui = _ui;
+            if (ui == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[TestProduct.Freemium] главный поток не запомнен в Initialize — вывод пропущен");
+                return;
+            }
+
+            if (ui.CheckAccess())
+            {
+                RunSafely(action);
+                return;
+            }
+
+            ui.BeginInvoke(new Action(() => RunSafely(action)));
+        }
+
+        private static void RunSafely(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TestProduct.Freemium] {ex}");
+            }
         }
 
         private static string MaskKey(string key)

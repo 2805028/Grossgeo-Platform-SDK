@@ -324,10 +324,14 @@ public void PerpetualCommand()
 public async void CheckUpdates()
 {
     var upd = await GrossGeoLicense.CheckForUpdatesAsync();
-    if (upd.HasUpdate)
-        editor.WriteMessage($"\nДоступна v{upd.AvailableVersion}");
-    else
-        editor.WriteMessage("\nОбновлений нет (проверьте Maintenance подписку).");
+    // После await — не обязательно главный поток: вывод через RunOnMainThread (руководство, раздел 5, шаг 3).
+    RunOnMainThread(() =>
+    {
+        if (upd.HasUpdate)
+            editor.WriteMessage($"\nДоступна v{upd.AvailableVersion}");
+        else
+            editor.WriteMessage("\nОбновлений нет (проверьте Maintenance подписку).");
+    });
 }
 ```
 
@@ -336,6 +340,10 @@ public async void CheckUpdates()
 ```csharp
 public void Initialize()
 {
+    // Главный поток — запомнить ЗДЕСЬ, до Task.Run (RunOnMainThread — раздел 5, шаг 3).
+    _ui = new System.Windows.Forms.Control();
+    _ = _ui.Handle;
+
     _ = Task.Run(async () =>
     {
         var result = await GrossGeoLicense.Initialize(options);
@@ -345,18 +353,20 @@ public void Initialize()
             var session = await GrossGeoLicense.AcquireSessionAsync(
                 Environment.MachineName);
             if (!session.IsSuccess)
-                WriteMessage($"Все слоты заняты: {session.ErrorMessage}");
+                RunOnMainThread(() => WriteMessage($"Все слоты заняты: {session.ErrorMessage}"));
         }
     });
 
+    // Событие приходит с фонового потока, как и код после await в Task.Run: AutoCAD API —
+    // только через главный поток. RunOnMainThread (Control, созданный в Initialize) —
+    // в руководстве разработчика, раздел 5, шаг 3.
     GrossGeoLicense.SessionExpired += (s, e) =>
-        WriteMessage($"Сессия потеряна: {e.Message}");
+        RunOnMainThread(() => WriteMessage($"Сессия потеряна: {e.Message}"));
 }
 
 public void Terminate()
 {
-    if (GrossGeoLicense.HasActiveSession)
-        GrossGeoLicense.ReleaseSessionAsync().Wait();
+    // Shutdown сам освобождает слот и ждёт панель не дольше 2 с — .Wait() на главном потоке не нужен.
     GrossGeoLicense.Shutdown();
 }
 ```
@@ -462,8 +472,23 @@ MyPlugin/
 сборка под .NET 8 не поддерживается.** По замеру 23.09.2026 она физически загружается и в 2027,
 но по данным Autodesk не совместима с AutoCAD 2027 — нужна пересборка под `net10.0-windows`
 (несовместимость с самим AutoCAD 2027, не с хостом .NET 10 как таковым: на AutoCAD 2026.1.2 и
-2025 U1.4, тоже на .NET 10, `net8`-сборки грузятся штатно). Подробнее и пример манифеста под
-.NET 10 — в руководстве разработчика, раздел «Таблица версий AutoCAD».
+2025 U1.4, тоже на .NET 10, `net8`-сборки грузятся штатно). Для 2027 в манифест добавляется
+отдельная запись со сборкой под `net10.0-windows`:
+
+```xml
+    <!-- AutoCAD 2027: отдельная сборка под net10.0-windows -->
+    <ComponentEntry
+        AppName="MyPlugin"
+        ModuleName="./Contents/net10.0-windows/MyPlugin.dll"
+        AppDescription="MyPlugin for AutoCAD 2027"
+        AppType=".Net"
+        LoadOnAutoCADStartup="True">
+      <RuntimeRequirements OS="Win64" Platform="AutoCAD|Civil3D"
+          SeriesMin="R26.0" SeriesMax="R26.0"/>
+    </ComponentEntry>
+```
+
+Подробнее — в руководстве разработчика, раздел «Таблица версий AutoCAD».
 
 ---
 

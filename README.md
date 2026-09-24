@@ -39,7 +39,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.2" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.3" />
 ```
 
 > Версия закрепляется точно, а не диапазоном. `2.*` разрешается в любую версию ветки 2 —
@@ -52,7 +52,7 @@
 **Поддерживаемые TFM:**
 - `net48` — AutoCAD 2019–2024
 - `net8.0-windows` — AutoCAD 2025–2026
-- `net10.0-windows` — AutoCAD 2027 (его родной рантайм: .NET 10)
+- `net10.0-windows` — AutoCAD 2027
 
 > **Для AutoCAD 2027 требуется сборка под `net10.0-windows`; `net8` не поддерживается.**
 > Замер 23.09.2026 показал, что сборка под `net8` физически ЗАГРУЖАЕТСЯ в AutoCAD 2027 —
@@ -363,14 +363,19 @@ if (!session.IsSuccess)
 
 // Heartbeat отправляется автоматически
 
-// Подписка на потерю сессии
+// Подписка на потерю сессии. Событие приходит с ФОНОВОГО потока (таймер heartbeat):
+// API AutoCAD (Editor, окна) — только через главный поток: Control (WinForms) или Dispatcher (WPF),
+// запомненный синхронно в Initialize (см. RunOnMainThread в Samples/TestProduct.Concurrent и
+// в руководстве разработчика, раздел 5, шаг 3).
+// Исключение обработчика SDK пишет в журнал и AutoCAD не роняет (с 2.2.3, LGC-1350).
 GrossGeoLicense.SessionExpired += (s, e) =>
-    ShowMessage($"Сессия потеряна: {e.Message}");
+    RunOnMainThread(() => ShowMessage($"Сессия потеряна: {e.Message}"));
 
-// Освобождение при завершении
+// Освобождение при завершении. Shutdown сам освобождает место Concurrent-сессии и ждёт панель
+// не дольше 2 с; ReleaseSessionAsync().Wait() здесь не нужен — он держал выход AutoCAD до 20 с,
+// а на .NET Framework при зависшей панели без конца (LGC-1351).
 public void Terminate()
 {
-    GrossGeoLicense.ReleaseSessionAsync().Wait();
     GrossGeoLicense.Shutdown();
 }
 ```
@@ -811,7 +816,7 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | `postInstallAction` | `string` | Действие: `RequireRestart`, `None` |
 | `netloadDllPath` | `string?` | Путь к DLL внутри bundle (для `Bundle`) |
 | `minAutoCADVersion` | `string` | Мин. серия AutoCAD. **Обязана быть достижима вашей нагрузкой:** сборка под `net8` не грузится в AutoCAD 2024 и старше — там .NET Framework. Для `net8`-продукта нижняя граница `R25.0` (2025); `R24.3` (2024) и ниже честны только при наличии сборки под `net48` |
-| `maxAutoCADVersion` | `string?` | Макс. серия AutoCAD — **потолок вашего продукта**; для `net8` — `R25.1` (2026), для `net10` — `R26.0` (2027), см. врезку ниже |
+| `maxAutoCADVersion` | `string?` | Макс. серия AutoCAD — **потолок вашего продукта**; для `net8` — `R25.1` (2026), для `net10` — `R26.0` (2027); серии вне полосы рантайма (`net8` с `R26.x`) сервер отвергает, см. врезку ниже |
 | `targetPlatforms` | `string[]` | Платформы: `AutoCAD`, `Civil3D`, `Map` |
 | `supportedOS` | `string[]` | ОС: `Win64` |
 
@@ -824,12 +829,12 @@ FeatureGuard.OrThrow("export", () => DoExport());
 > **Путей до `SeriesMax` два, и потолком ваше значение остаётся на обоих.** Если вы указали
 > `netloadDllPath` или `targetRuntimes`, панель пишет ваше значение в `SeriesMax` **дословно**.
 > Если не указали — она сама разбирает нагрузку по таргетам (`net48` → `R23.0–R24.3`,
-> `net8` → `R25.0–R26.9`, `net10` → `R26.0–R26.9`; если в бандле есть и `net8`, и `net10`,
-> серии 2027 отдаются `net10`) и **пересекает** свой диапазон с вашим, беря меньшее. Дословная
-> запись — путь большинства: она срабатывает всякий раз, когда `netloadDllPath` задан.
+> `net8` → `R25.0–R25.9`, `net10` → `R26.0–R26.9`) и **пересекает** свой диапазон с вашим, беря
+> меньшее. Дословная запись — путь большинства: она срабатывает всякий раз, когда `netloadDllPath`
+> задан; объявленное в `targetRuntimes` панель при этом тоже обрезает по полосе рантайма.
 >
 > **Верное значение зависит от рантайма вашей сборки.** Для `net8` — `R25.1`, это AutoCAD 2026:
-> родной рантайм 2025–2026, дальше него `net8` не идёт. **Для AutoCAD 2027 требуется сборка под
+> цель сборки для 2025–2026, дальше неё `net8` не идёт. **Для AutoCAD 2027 требуется сборка под
 > `net10.0-windows`; `net8` не поддерживается** — она физически ЗАГРУЖАЕТСЯ в процесс 2027, но
 > по данным Autodesk не совместима с AutoCAD 2027 — нужна пересборка под `net10.0-windows`
 > (несовместимость с самим AutoCAD 2027, не с .NET 10 как таковым: на AutoCAD 2026.1.2 и 2025

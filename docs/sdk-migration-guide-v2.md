@@ -216,6 +216,10 @@ public void ViewCommand()
 ```csharp
 public void Initialize()
 {
+    // Главный поток — запомнить ЗДЕСЬ, до Task.Run (RunOnMainThread — раздел 5, шаг 3).
+    _ui = new System.Windows.Forms.Control();
+    _ = _ui.Handle;
+
     Task.Run(async () =>
     {
         var result = await GrossGeoLicense.Initialize(options);
@@ -227,22 +231,24 @@ public void Initialize()
 
             if (!session.IsSuccess)
             {
-                editor.WriteMessage($"\nВсе слоты заняты: {session.ErrorMessage}");
+                RunOnMainThread(() =>
+                    editor.WriteMessage($"\nВсе слоты заняты: {session.ErrorMessage}"));
             }
         }
     });
 
-    // Обработка потери сессии
-    GrossGeoLicense.SessionExpired += (s, e) =>
+    // Обработка потери сессии. Событие приходит с фонового потока, как и код после await
+    // в Task.Run: AutoCAD API — только через главный поток. RunOnMainThread (Control,
+    // созданный в Initialize) — в руководстве разработчика, раздел 5, шаг 3.
+    GrossGeoLicense.SessionExpired += (s, e) => RunOnMainThread(() =>
     {
         editor.WriteMessage($"\nСессия потеряна: {e.Message}");
-    };
+    });
 }
 
 public void Terminate()
 {
-    // Освободить слот
-    GrossGeoLicense.ReleaseSessionAsync().Wait();
+    // Shutdown сам освобождает слот и ждёт панель не дольше 2 с — .Wait() на главном потоке не нужен.
     GrossGeoLicense.Shutdown();
 }
 ```

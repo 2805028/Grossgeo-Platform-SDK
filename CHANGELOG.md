@@ -5,6 +5,49 @@ All notable changes to GrossGeo.SDK.Stub will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2026-09-24
+
+**REQUIRED.** Closes an AutoCAD crash and an AutoCAD 2019–2024 hang caused by the SDK, and a
+Concurrent seat being lost without any event.
+
+### Fixed
+- **An exception in your `SessionExpired` or `LicenseRefreshed` handler crashed `acad.exe`
+  (`LGC-1350`).** The heartbeat timer ran as `async void`, and the event was raised inside the
+  `try` whose `catch` raised it a second time without protection. Every subscriber is now called
+  in isolation, the error goes to the SDK log with the subscriber's name, and `SessionExpired` is
+  raised once per session.
+- **.NET Framework (AutoCAD 2019–2024): an exchange with a User Panel that accepted the
+  connection but never answered blocked the calling thread forever (`LGC-1352`)** — at load, in
+  a command or on exit. The exchange is now bounded by `IpcTimeoutSeconds` and ends with
+  `CONNECTION_FAILED`.
+- **Concurrent mode: a licence re-check dropped the session token (`LGC-1351`).** A purchase or
+  trial of any product, an account switch, a panel restart or `ClearLocalCache` replaced the
+  licence result with one that had no token; heartbeat stopped silently and the server released
+  the seat. Sessions now live in their own per-product store that re-checks do not touch. A
+  session that is active but has no token raises `SessionExpired` with `SESSION_TOKEN_LOST`.
+- **Concurrent mode with several products in one AutoCAD: only the last-acquired session got a
+  heartbeat (`LGC-1360`).** One timer now serves every active session on its own schedule; a
+  failure or expiry affects only its own product.
+- **A temporary refusal stuck until restart (`LGC-1353`).** A refusal that is not authoritative
+  (panel busy, timeout, sign-in still in progress) is now re-asked in the background
+  (5/15/30/60 s, then every 5 minutes); `LicenseRefreshed` fires when the result changes.
+- **`ProtectOrThrow` without a verdict reported "licence invalid" (`LGC-1355`).** It now reports
+  "not checked yet" (`Status = Unknown`, `NOT_CHECKED`). `RequireFeatureOrThrow` tells apart
+  "could not check, retry", "licence invalid" and "not in your plan".
+
+### Added
+- `SessionExpiredEventArgs.ProductKey` (nullable) and a three-argument constructor — which
+  product's seat was released (`LGC-1360`).
+
+### Changed
+- `Shutdown()` and `Shutdown(productKey)` release the Concurrent seat themselves and wait for the
+  panel at most 2 seconds (`LGC-1351`). Remove `ReleaseSessionAsync().Wait()` from `Terminate`:
+  on the main thread it held AutoCAD's exit for up to 20 seconds, and on .NET Framework without
+  limit.
+- Documentation: `SessionExpired` and `LicenseRefreshed` arrive on background threads; the README
+  and samples now call the AutoCAD API from them only through the main thread (a `Dispatcher` or
+  `Control` captured synchronously in `Initialize`).
+
 ## [2.2.2] - 2026-09-23
 
 ### Changed
