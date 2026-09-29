@@ -150,7 +150,7 @@ namespace TestProduct.PluginDll
                     if (reason?.Status == LicenseCheckStatus.NetworkError)
                     {
                         WriteMessage($"\n⏳ Проверить лицензию не удалось: {reason.Message}");
-                        WriteMessage("Право не отозвано — повторите после запуска User Panel.");
+                        WriteMessage("Право не отозвано — откройте панель GrossGeo (значок в области уведомлений); если она просит войти — войдите, затем повторите.");
                         return;
                     }
 

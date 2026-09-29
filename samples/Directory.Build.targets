@@ -25,8 +25,13 @@
     <BundleZipName>$(BundleName)_$(TargetFramework).zip</BundleZipName>
   </PropertyGroup>
 
+  <!-- LGC-1374 п.3 (живой замер K 25.09): цели бандла и сторож GG1050 — для проектов ПЛАГИНОВ. На
+       wixproj образца (TestProduct.Installer\MsiInstaller) они срабатывали тоже: GG1050 падал на пустом
+       каталоге HintPath (у ссылки WiX путь — голое имя файла), а порождение grossgeo-settings.json пыталось
+       сделать бандл из самого wixproj (exit 1) — MSI образца не собирался ни по README, ни через
+       build-samples.ps1. Бандла у wixproj нет, его вход готовит TestProduct.Installer.csproj. -->
   <!-- Создание bundle структуры после сборки -->
-  <Target Name="CreateBundleStructure" AfterTargets="Build">
+  <Target Name="CreateBundleStructure" AfterTargets="Build" Condition="'$(MSBuildProjectExtension)' != '.wixproj'">
     <PropertyGroup>
       <_BundleOutputDir>$(OutputPath)$(BundleName)</_BundleOutputDir>
       <_BundleContentsDir>$(_BundleOutputDir)\Contents</_BundleContentsDir>
@@ -70,7 +75,7 @@
   </Target>
 
   <!-- Создание ZIP после bundle структуры -->
-  <Target Name="CreateBundleZip" AfterTargets="CreateBundleStructure">
+  <Target Name="CreateBundleZip" AfterTargets="CreateBundleStructure" Condition="'$(MSBuildProjectExtension)' != '.wixproj'">
     <PropertyGroup>
       <_BundleOutputDir>$(OutputPath)$(BundleName)</_BundleOutputDir>
       <_ZipOutputPath>$(OutputPath)$(BundleZipName)</_ZipOutputPath>
@@ -94,7 +99,7 @@
   </Target>
 
   <!-- Очистка bundle и ZIP при Clean -->
-  <Target Name="CleanBundleStructure" AfterTargets="Clean">
+  <Target Name="CleanBundleStructure" AfterTargets="Clean" Condition="'$(MSBuildProjectExtension)' != '.wixproj'">
     <PropertyGroup>
       <_BundleOutputDir>$(OutputPath)$(BundleName)</_BundleOutputDir>
       <_ZipOutputPath>$(OutputPath)$(BundleZipName)</_ZipOutputPath>
@@ -123,7 +128,7 @@
        который ЭТОТ проект действительно ссылается. Нет ссылок по пути — нечего и проверять.
        ═══════════════════════════════════════════════════════════════════════ -->
   <Target Name="CheckAutoCadReferenceDir" BeforeTargets="ResolveAssemblyReferences"
-          Condition="'$(SkipAcadRefDirCheck)' != 'true'">
+          Condition="'$(SkipAcadRefDirCheck)' != 'true' and '$(MSBuildProjectExtension)' != '.wixproj'">
     <!-- Выключатель нужен не «на всякий случай», а как ПРИБОР: он даёт измерить, чем
          падала сборка ДО этой цели. Без него «падало непонятными ошибками» осталось бы
          утверждением, унаследованным от автора записи, а не замером. -->

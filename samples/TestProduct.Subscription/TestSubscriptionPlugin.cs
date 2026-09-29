@@ -209,7 +209,7 @@ namespace TestProduct.Subscription
                         if (reason?.Status == LicenseCheckStatus.NetworkError)
                         {
                             WriteMessage($"\n⏳ Проверить подписку не удалось: {reason.Message}");
-                            WriteMessage("Подписка не отменена — повторите после запуска User Panel.");
+                            WriteMessage("Подписка не отменена — откройте панель GrossGeo (значок в области уведомлений); если она просит войти — войдите, затем повторите.");
                             return;
                         }
 

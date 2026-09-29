@@ -11,7 +11,7 @@
 ### NuGet
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.1" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
 ```
 
 Зависимость `GrossGeo.Contracts` подтянется автоматически.
@@ -102,7 +102,8 @@ var result = await GrossGeoLicense.Initialize(new LicenseOptions
     CheckForUpdatesOnInit = true
 });
 
-// Синхронная (если нужно блокировать поток)
+// Синхронная (если нужно блокировать поток) — не дольше 5 с: нет вердикта — NOT_CHECKED,
+// исход придёт событием LicenseRefreshed (подписаться ДО вызова)
 var result = GrossGeoLicense.InitializeSync("GG-XXXX-XXXX-XXXX-XXXX");
 ```
 
@@ -116,7 +117,7 @@ GrossGeoLicense.BillingModel    // Free | Subscription | Perpetual | Contract
 GrossGeoLicense.LicenseMode     // User | Machine | Concurrent
 GrossGeoLicense.ExpiresAt       // DateTime?
 GrossGeoLicense.DaysRemaining   // int?
-GrossGeoLicense.IsInGracePeriod // bool
+GrossGeoLicense.IsInGracePeriod // bool — в SDK 2.2.x не выставляется (всегда false); офлайн — по IsOfflineMode
 GrossGeoLicense.IsOfflineMode   // bool
 GrossGeoLicense.Features        // IReadOnlyList<string>
 GrossGeoLicense.FeatureLimits   // IReadOnlyDictionary<string, int>?
@@ -389,6 +390,9 @@ MyPlugin/
 
 ### .csproj
 
+> Ниже — таргеты для AutoCAD 2019–2026. **Для AutoCAD 2027 нужен ещё `net10.0-windows`** — сборка под
+> net8 в нём не грузится; полоса версий и пример манифеста — в таблице «Версии AutoCAD» ниже.
+
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -400,7 +404,7 @@ MyPlugin/
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.1" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
   </ItemGroup>
 
   <!-- AutoCAD References -->
@@ -429,30 +433,22 @@ MyPlugin/
   <CompanyDetails Name="Studio Name" Url="https://example.com"/>
 
   <Components Description="MyPlugin Components">
-    <!-- AutoCAD -->
+    <!-- Один ComponentEntry на модуль; платформы — через «|» в Platform -->
     <ComponentEntry
         AppName="MyPlugin"
         ModuleName="./Contents/MyPlugin.dll"
-        AppDescription="MyPlugin for AutoCAD"
+        AppDescription="MyPlugin for AutoCAD and Civil 3D"
         AppType=".Net"
         LoadOnAutoCADStartup="True">
-      <RuntimeRequirements OS="Win64" Platform="AutoCAD"
-          SeriesMin="R24.0" SeriesMax="R25.1"/>
-    </ComponentEntry>
-
-    <!-- Civil 3D (отдельный ComponentEntry) -->
-    <ComponentEntry
-        AppName="MyPlugin"
-        ModuleName="./Contents/MyPlugin.dll"
-        AppDescription="MyPlugin for Civil3D"
-        AppType=".Net"
-        LoadOnAutoCADStartup="True">
-      <RuntimeRequirements OS="Win64" Platform="Civil3D"
+      <RuntimeRequirements OS="Win64" Platform="AutoCAD|Civil3D"
           SeriesMin="R24.0" SeriesMax="R25.1"/>
     </ComponentEntry>
   </Components>
 </ApplicationPackage>
 ```
+
+Платформы пишите через «|» в одной записи, а не отдельными `ComponentEntry` — иначе панель при установке
+заменит ваш манифест своим (подробнее — «Руководство разработчика», раздел про `PackageContents.xml`).
 
 Версии AutoCAD:
 
@@ -588,7 +584,7 @@ MyPlugin/
 | `LicenseCheckStatus.MachineNotBound` | Машина не привязана | Активировать лицензию в User Panel |
 | `LicenseCheckStatus.Expired` | Подписка истекла | Продлить подписку в User Panel |
 | `LicenseCheckStatus.NoAvailableSeats` | Все concurrent-слоты заняты | Дождаться освобождения / увеличить план |
-| `IsInGracePeriod = true` | Нет связи с сервером | Восстановить интернет в течение GracePeriodDays |
+| `IsOfflineMode = true` | Нет связи с сервером, ответ из офлайн-кэша | Восстановить интернет; оставшиеся дни — в `Message` (`IsInGracePeriod` в SDK 2.2.x не выставляется) |
 | DLL не загружается | Нет в Contents/ | Проверить CopyLocalLockFileAssemblies и структуру bundle |
 
 Диагностические логи SDK: `%LocalAppData%/GrossGeo/SDK.Stub/sdk_diag_YYYYMMDD.log`

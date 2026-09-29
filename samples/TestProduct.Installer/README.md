@@ -101,7 +101,16 @@ TestProduct.Installer/
 # Через общий скрипт
 .\scripts\build-samples.ps1 -Products Installer
 
-# Вручную
+# Вручную (сам образец платформы — с его собственным UpgradeCode)
 dotnet build TestProduct.Installer.csproj -c Release
-dotnet build MsiInstaller\MsiInstaller.wixproj -c Release -p:ProductVersion=1.0.0
+dotnet build MsiInstaller\MsiInstaller.wixproj -c Release -p:ProductVersion=1.0.0 -p:AllowSampleUpgradeCode=true --no-incremental
 ```
+
+> **Делаете свой продукт по этому образцу — замените UpgradeCode.** Код по умолчанию в
+> `MsiInstaller\MsiInstaller.wixproj` принадлежит образцу платформы: сервер отвергнет MSI с ним
+> (`MSI_UPGRADE_CODE_TAKEN`), а два продукта с одним UpgradeCode Windows Installer считает одной семьёй —
+> установка одного снимет другой. Без замены сборка MSI отказывает с подсказкой; передайте свой GUID
+> через `-p:UpgradeCode=<GUID>` или впишите его в `MsiInstaller.wixproj`. Код не меняйте между версиями
+> одного продукта — по нему Windows находит предыдущую установку.
+> Собирайте MSI с `--no-incremental`: при смене одного лишь `-p:UpgradeCode` инкрементальная сборка WiX
+> не перекомпилирует `.wxs`, и в MSI остаётся прежний код.

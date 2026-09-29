@@ -47,22 +47,23 @@ grossgeo://purchase/3fa85f64-5717-4562-b3fc-2c963f66afa6
 | Идентификатор | Формат | Для чего | Подходит для deep-link? |
 |---|---|---|---|
 | **ProductId** | GUID | Идентификатор продукта в каталоге | ✅ Да |
-| ProductKey | `GG-XXXX-XXXX-XXXX-XXXX` | `LicenseOptions.ProductKey` в коде плагина | ❌ Нет |
+| ProductKey | `GG-XXXX-XXXX-XXXX-XXXX` | `LicenseOptions.ProductKey` в коде плагина | ✅ с User Panel новее 1.0.2643; на более старых — только в `start-trial` (§3.1) |
 | UpgradeCode | GUID | `PackageContents.xml` (обновления пакета) | ❌ Нет — это другой GUID |
 
-Если подставить ProductKey или чужой/неверный GUID, ошибки не будет: панель откроется или активируется, но навигация на страницу продукта молча не произойдёт.
+Если подставить чужой или неверный GUID — а на User Panel 1.0.2643 и старше также ProductKey в `product`/`purchase`/`reviews`, — ошибки не будет: панель откроется или активируется, но навигация на страницу продукта молча не произойдёт.
 
 ProductId неизменен на всё время жизни продукта — вшейте его константой в код рядом с ProductKey.
 
 **Где взять ProductId:** в Developer Portal он пока не отображается (на вкладке «Общее» показываются только API Key и UpgradeCode — это не он). До появления поля в портале запросите ProductId у поддержки платформы при создании продукта.
 
-### 3.1. Исключение: `start-trial` принимает и ProductKey
+### 3.1. ProductKey вместо ProductId
 
-В отличие от `product`/`purchase`/`reviews`, команда `start-trial` понимает **оба** идентификатора в параметре:
+Команда `start-trial` понимает **оба** идентификатора в параметре на любой версии User Panel. Команды `product`, `purchase` и `reviews` понимают ProductKey с User Panel новее 1.0.2643 (`LGC-1425`); на более старых ProductKey в них молча не сработает (см. выше):
 
 ```
 grossgeo://start-trial/3fa85f64-5717-4562-b3fc-2c963f66afa6   # ProductId (GUID)
 grossgeo://start-trial/GG-XXXX-XXXX-XXXX-XXXX                  # ProductKey
+grossgeo://purchase/GG-XXXX-XXXX-XXXX-XXXX                     # ProductKey, User Panel новее 1.0.2643
 ```
 
 Если параметр не парсится как GUID, панель резолвит его как ProductKey сама (через каталог, без лицензии) — то есть можно использовать `LicenseOptions.ProductKey`, который у вас и так уже есть в коде плагина, не дожидаясь ProductId от поддержки. Рекомендуемый способ — SDK-метод `GrossGeoLicense.RequestTrialAsync()` (см. §4.1), он делает то же самое без ручной сборки URI.

@@ -30,4 +30,23 @@
     <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
   </ItemGroup>
 
+  <!--
+    LGC-1374, п.3 формы. UpgradeCode по умолчанию — код САМОГО образца, и он уже
+    закреплён за продуктом-образцом платформы. Студия, скопировавшая образец и не сменившая код, получила
+    бы при загрузке MSI отказ MSI_UPGRADE_CODE_TAKEN, а два продукта с одним кодом Windows Installer
+    считает одной семьёй (MajorUpgrade одного снимает другой). Поэтому сборка с кодом образца отказывает,
+    пока код не заменён — или пока явно не сказано, что собирается сам образец платформы
+    (-p:AllowSampleUpgradeCode=true; так делает scripts/build-samples.ps1).
+    BeforeBuild, а не Build: цель с BeforeTargets="Build" запускается ПОСЛЕ зависимостей Build, то есть
+    после сборки MSI. Сравнение строк в MSBuild регистр не различает.
+  -->
+  <PropertyGroup>
+    <SampleUpgradeCode>23C5894A-89FC-45D7-B1DB-1C8445FD3679</SampleUpgradeCode>
+  </PropertyGroup>
+  <Target Name="RefuseSampleUpgradeCode"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(UpgradeCode)' == '$(SampleUpgradeCode)' and '$(AllowSampleUpgradeCode)' != 'true'">
+    <Error Text="Замените UpgradeCode образца в Samples\TestProduct.Installer\MsiInstaller\MsiInstaller.wixproj (свойство UpgradeCode, сейчас $(SampleUpgradeCode)) на свой GUID или передайте -p:UpgradeCode=&lt;ваш GUID&gt;: этот код занят продуктом-образцом платформы, и загрузка MSI с ним будет отвергнута (MSI_UPGRADE_CODE_TAKEN). Собираете сам образец платформы — добавьте -p:AllowSampleUpgradeCode=true." />
+  </Target>
+
 </Project>

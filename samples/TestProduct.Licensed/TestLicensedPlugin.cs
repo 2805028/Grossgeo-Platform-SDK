@@ -210,7 +210,7 @@ namespace TestProduct.Licensed
                     if (reason?.Status == LicenseCheckStatus.NetworkError)
                     {
                         WriteMessage($"[TEST_PROTECTED_CMD] ⏳ Проверить лицензию не удалось: {reason.Message}");
-                        WriteMessage("[TEST_PROTECTED_CMD] Это не отказ в праве — повторите после запуска User Panel.");
+                        WriteMessage("[TEST_PROTECTED_CMD] Это не отказ в праве — откройте панель GrossGeo (значок в области уведомлений); если она просит войти — войдите, затем повторите.");
                         return;
                     }
 

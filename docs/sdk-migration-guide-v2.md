@@ -38,7 +38,7 @@ SDK v2 вводит новую модель лицензирования: **Plan
 <PackageReference Include="GrossGeo.SDK.Stub" Version="1.*" />
 
 <!-- СТАЛО -->
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.1" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
 ```
 
 Версия закрепляется точно. Диапазон `2.*` разрешается в любую версию ветки 2 — в том числе в
@@ -82,8 +82,8 @@ using GrossGeo.Contracts.Licensing;
 if (GrossGeoLicense.LicenseType != LicenseType.None &&
     GrossGeoLicense.LicenseType != LicenseType.Trial)
 
-// СТАЛО
-if (GrossGeoLicense.PlanTier >= PlanTier.Pro)
+// СТАЛО (без IsValid тариф по порядку не сравнивать: при отсутствии вердикта PlanTier = Unknown = 255, а 255 >= Pro истинно)
+if (GrossGeoLicense.IsValid && GrossGeoLicense.PlanTier != PlanTier.Unknown && GrossGeoLicense.PlanTier >= PlanTier.Pro)
 ```
 
 ```csharp

@@ -93,6 +93,20 @@ curl -sS -X POST "$BASE_URL/api/developer/products/$PRODUCT_ID/releases" \
 | `Bundle` | `.zip` |
 | `Installer` | `.msi` |
 
+**`targetPlatforms` тоже указывайте явно, и на каждом релизе заново.** В Developer Portal форма нового релиза
+подставляет платформы последнего опубликованного релиза того же продукта; при публикации через этот API
+такого наследования нет (`LGC-1407`). Забытое поле не даёт отказа — сервер молча записывает `["AutoCAD"]`,
+и релиз остаётся объявлен только для AutoCAD, даже если предыдущий релиз указывал больше платформ:
+
+```bash
+curl -sS -X POST "$BASE_URL/api/developer/products/$PRODUCT_ID/releases" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"version":"1.4.0","channel":"Stable","distributionType":"Bundle",
+       "targetPlatforms":["AutoCAD","Civil3D"],
+       "changelog":"Исправлена выгрузка профилей"}'
+```
+
 Отдельно от этого всегда принимается `release-manifest.json` (тип файла `ReleaseManifest`).
 
 Если версия уже занята, вернётся `400` с кодом `VERSION_EXISTS` — **и с идентификатором занявшего
@@ -221,6 +235,7 @@ curl -sS "$BASE_URL/api/developer/releases/$RELEASE_ID" \
 | `VERSION_EXISTS` | 400 | версия занята; `releaseId` в теле |
 | `NO_DISTRIBUTION_FILE` | 400 | в релизе нет файла дистрибутива |
 | `MANIFEST_INVALID` | 400 | `release-manifest.json` не прошёл схему; детали в `errors.manifest` |
+| `TARGET_PLATFORM_UNKNOWN` | 400 | в `targetPlatforms` незнакомая платформа (создание и правка релиза); допустимые значения названы в тексте отказа: `AutoCAD`, `Civil3D`, `Map3D`, `Architecture`, `Mechanical`, `Electrical`, `MEP`, `Plant3D` |
 | `FILE_NOT_IN_S3` | 400 | регистрация до успешной загрузки |
 | `INVALID_STATUS` | 400 | операция не для текущего статуса релиза |
 | `TOKEN_SCOPE_REQUIRED` | 403 | токену не хватает скоупа |

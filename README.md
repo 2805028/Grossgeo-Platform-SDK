@@ -39,7 +39,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.3" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
 ```
 
 > Версия закрепляется точно, а не диапазоном. `2.*` разрешается в любую версию ветки 2 —
@@ -103,7 +103,8 @@ public class MyPlugin : IExtensionApplication
             {
                 // result.PlanTier  — уровень плана (Free, Pro, ProPlus)
                 // result.BillingModel — модель оплаты (Subscription, Perpetual)
-                // result.ExpiresAt — дата истечения лицензии
+                // result.ExpiresAt — дата истечения лицензии; у подписки в окне продления — конец окна, а не
+                //   конец оплаченного периода (см. «Срок подписки в окне продления»). Право определяет result.IsValid.
             }
         });
     }
@@ -147,14 +148,17 @@ public void MyCommand()
 > `await WhenReadyAsync(...)` для `async`-обработчиков. Оба по истечении срока отдают
 > `Status = Unknown` и `ErrorCode = NOT_CHECKED` — **явное «не спрашивали», а не отказ**.
 >
-> **Забыли вызвать `Initialize` вовсе (не просто не дождались, а не позвали)** — с 2.2.0 это
-> `Status = NetworkError`, `ErrorCode = NOT_INITIALIZED`, а не `Blocked`: SDK не смог спросить,
-> а не «прав нет» (отдельного значения `Unavailable` в `LicenseCheckStatus` нет — это тот же
-> статус, что и у сетевого отказа, потому что предмет тот же: «не смогли проверить»).
-> `Protect(onBlocked: ...)` по-прежнему сработает — решение о вызове коллбэка смотрит на
-> `IsValid`, не на `Status`, — изменился только `Status`, который приедет ВНУТРЬ `onBlocked`:
-> `NetworkError`, а не `Blocked`. Если ваш обработчик уже различает причины (как в примере
-> выше), этот случай попадёт в ветку `NetworkError` наравне с настоящими сетевыми отказами.
+> **Забыли вызвать `Initialize` вовсе (не просто не дождались, а не позвали).** Без `Initialize`
+> `Protect`, `Check` и `WaitUntilReady` отвечают `Status = Unknown`, `ErrorCode = NOT_CHECKED` —
+> «не спрашивали», а не отказ. Явная проверка без `Initialize` — `CheckAsync` или `RefreshAsync`,
+> статические и у аксессора — с 2.2.0 отвечает `Status = NetworkError`,
+> `ErrorCode = NOT_INITIALIZED`, а не `Blocked`: SDK не смог спросить, а не «прав нет»
+> (отдельного значения `Unavailable` в `LicenseCheckStatus` нет — это тот же статус, что и у
+> сетевого отказа, потому что предмет тот же: «не смогли проверить»). Этот ответ запоминается,
+> и следующий `Protect` передаст его в `onBlocked`. В обоих случаях `IsValid = false` и
+> `onBlocked` вызывается — решение о вызове коллбэка смотрит на `IsValid`, не на `Status`.
+> Если ваш обработчик различает причины (как в примере выше), этот случай попадёт в ветку
+> `Unknown` или `NetworkError` наравне с настоящими «не смогли проверить».
 
 ---
 
@@ -201,7 +205,9 @@ if (License.IsValid)
 ### Проверка уровня плана
 
 ```csharp
-if (License.PlanTier >= PlanTier.Pro)
+// Без IsValid не сравнивайте тариф по порядку: при отсутствии вердикта PlanTier = Unknown (255),
+// а 255 >= Pro истинно
+if (License.IsValid && License.PlanTier != PlanTier.Unknown && License.PlanTier >= PlanTier.Pro)
 {
     EnableAdvancedTools();
 }
@@ -258,8 +264,9 @@ if (!License.CheckLimit("batch-export", "maxPerCall", objects.Count))
     return;
 }
 
-// С исключением LimitExceededException
-License.RequireLimitOrThrow("batch-export", "maxPerCall", objects.Count);
+// С исключением LimitExceededException — только статический вход (у ProductLicenseAccessor такого
+// метода нет); бросает и при недействительной лицензии (Limit = 0)
+GrossGeoLicense.RequireLimitOrThrow("batch-export", "maxPerCall", objects.Count);
 ```
 
 ---
@@ -339,7 +346,7 @@ if (!result.IsSuccess)
 |----------|-----|----------|
 | `IsSuccess` | `bool` | Успешна ли операция |
 | `CurrentUsage` | `int` | Текущее значение usage |
-| `Limit` | `int?` | Значение лимита (null = безлимитно) |
+| `Limit` | `int?` | Значение лимита (null = безлимитно при `IsSuccess` или `LimitExceeded`; при ошибке не заполнено) |
 | `Remaining` | `int?` | Оставшийся quota |
 | `ErrorCode` | `string?` | Код ошибки |
 | `ErrorMessage` | `string?` | Сообщение об ошибке |
@@ -357,7 +364,8 @@ var session = await GrossGeoLicense.AcquireSessionAsync(
 
 if (!session.IsSuccess)
 {
-    ShowMessage($"Все слоты заняты: {session.ErrorMessage}");
+    // IsRetrying = true — отказ временный: SDK повторит сам и поднимет SessionAcquired
+    ShowMessage($"Сессию не получили: {session.ErrorMessage}");
     return;
 }
 
@@ -373,7 +381,7 @@ GrossGeoLicense.SessionExpired += (s, e) =>
 
 // Освобождение при завершении. Shutdown сам освобождает место Concurrent-сессии и ждёт панель
 // не дольше 2 с; ReleaseSessionAsync().Wait() здесь не нужен — он держал выход AutoCAD до 20 с,
-// а на .NET Framework при зависшей панели без конца (LGC-1351).
+// а на .NET Framework при зависшей панели без конца (LGC-1351; с 2.2.5 обмен ограничен и там).
 public void Terminate()
 {
     GrossGeoLicense.Shutdown();
@@ -389,13 +397,14 @@ SDK автоматически кэширует результат лиценз�
 | Ситуация | Поведение |
 |----------|-----------|
 | User Panel доступен | Полная проверка → результат кэшируется |
-| User Panel недоступен, кэш ≤ 7 дней | Работа из кэша, `IsInGracePeriod = true` |
-| User Panel недоступен, кэш истёк | `IsValid = false` |
+| User Panel недоступен, кэш не истёк | Работа из подписанного офлайн-кэша, `IsOfflineMode = true`. Срок подписывает платформа для этой лицензии: у Concurrent офлайна нет, у подписки на пользователя — до 7 суток, у остальных — до 30, и не дальше срока самой лицензии. `IsInGracePeriod` при этом остаётся `false` |
+| User Panel недоступен, кэш истёк | У продукта нет бесплатного тарифа — `IsValid = false`, `CACHE_EXPIRED`. Есть — до подписанного срока мягкой посадки `IsValid = true` с бесплатным тарифом, `IsOfflineMode = true`, `ExpiresAt` и `DaysRemaining` равны `null` |
 
 ```csharp
-if (License.IsInGracePeriod)
+if (License.IsOfflineMode)
 {
-    ShowWarning($"Офлайн-режим. Осталось дней: {License.DaysRemaining}");
+    // Оставшиеся дни офлайна SDK кладёт в Message
+    ShowWarning(License.LastResult?.Message);
 }
 ```
 
@@ -417,7 +426,7 @@ if (update.HasUpdate)
 
 ## Deep-link: старт Trial из плагина
 
-Для кнопки «Попробовать бесплатно» — открывает User Panel на карточке текущего продукта (по `LicenseOptions.ProductKey`) и просит показать подтверждение старта trial. **Лицензию не активирует сама** — только открывает панель; сам trial стартует в панели, и только с подтверждением пользователя и если сервер это разрешает (`CanStartTrial=true`). Если User Panel не запущен — SDK пытается его запустить, как и остальные IPC-вызовы.
+Для кнопки «Попробовать бесплатно» — открывает User Panel на карточке продукта последнего `Initialize` в процессе (по его `LicenseOptions.ProductKey`; при нескольких GrossGeo-продуктах в одном AutoCAD это не обязательно вызывающий продукт — варианта через `ForProduct` у навигации нет) и просит показать подтверждение старта trial. **Лицензию не активирует сама** — только открывает панель; сам trial стартует в панели, и только с подтверждением пользователя и если сервер это разрешает (`CanStartTrial=true`). Если User Panel не запущен — SDK пытается его запустить, так же как при проверке лицензии. Вызовы сессий, учёта использования и проверки обновлений панель не запускают.
 
 ```csharp
 [CommandMethod("MY_TRIAL_BUTTON")]
@@ -434,6 +443,8 @@ await GrossGeoLicense.OpenProductPageAsync();              // просто от�
 await GrossGeoLicense.OpenProductPageAsync("purchase");    // сразу на блоке покупки
 ```
 
+> **Версия User Panel.** Открытие карточки без диалога и секции `purchase`/`reviews` работают с User Panel новее 1.0.2643 (`LGC-1425`). На более старых панелях `OpenProductPageAsync()` показывает диалог старта пробного периода, а секции игнорируются — ответ панели SDK не читает, ошибка продукту не возвращается.
+
 Эквивалент через `grossgeo://` URI-протокол (например для кнопок вне AutoCAD-контекста) описан в руководстве по deep-link'ам — оно выдаётся вместе с доступом в [Developer Portal](https://grossgeo.ru/developer).
 
 ---
@@ -444,9 +455,9 @@ await GrossGeoLicense.OpenProductPageAsync("purchase");    // сразу на б
 new LicenseOptions
 {
     ProductKey = "GG-XXXX-XXXX-XXXX-XXXX",  // Обязательно
-    PluginVersion = "1.0.0",                 // Для аналитики
+    PluginVersion = "1.0.0",                 // Передаётся при проверке лицензии (диагностика) и проверке обновлений
     IpcTimeoutSeconds = 10,                  // Таймаут IPC (по умолчанию 10)
-    GracePeriodDays = 7,                     // Grace period (по умолчанию 7)
+    GracePeriodDays = 7,                     // Срок офлайна для ответов без подписанного срока (по умолчанию 7)
     CheckForUpdatesOnInit = true,            // Проверка обновлений при старте
     CacheDirectory = null,                   // Путь к кэшу (null = по умолчанию)
     Logger = null                            // ILicenseLogger для диагностики
@@ -468,6 +479,7 @@ new LicenseOptions
 | `ProPlus` (2) | Расширенный план |
 | ~~`Maintenance` (10)~~ | ~~Право на обновления~~ — **deprecated** в v3 (Maintenance как атрибут Perpetual-плана: `MaintenanceYearlyPrice`) |
 | `Enterprise` (99) | Индивидуальный контракт (зарезервирован) |
+| `Unknown` (255) | Ответа нет (не спрашивали, панель не ответила, отказ) — это не тариф. **Сравнение порядка (`>=`, `>`) с `Unknown` истинно — всегда проверяйте `IsValid`** |
 
 #### BillingModel
 
@@ -477,6 +489,7 @@ new LicenseOptions
 | `Subscription` (1) | Подписка |
 | `Perpetual` (2) | Бессрочная лицензия |
 | ~~`Contract` (3)~~ | ~~Индивидуальный контракт~~ — **deprecated** в v3 |
+| `Unknown` (255) | Ответа нет — это не модель оплаты |
 
 #### LicenseMode
 
@@ -485,6 +498,7 @@ new LicenseOptions
 | `User` (0) | Привязка к пользователю (seat) |
 | `Machine` (1) | Привязка к машине (fingerprint) |
 | `Concurrent` (2) | Плавающие лицензии (пул сессий) |
+| `Unknown` (255) | Ответа нет — это не режим лицензирования |
 
 #### FeatureKeyAvailability
 
@@ -523,9 +537,9 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `PlanTier` | `PlanTier` | Уровень плана |
 | `BillingModel` | `BillingModel` | Модель оплаты |
 | `LicenseMode` | `LicenseMode` | Режим лицензирования |
-| `ExpiresAt` | `DateTime?` | Дата истечения |
-| `DaysRemaining` | `int?` | Дней до истечения |
-| `IsInGracePeriod` | `bool` | В grace period (офлайн) |
+| `ExpiresAt` | `DateTime?` | Дата истечения; в окне продления подписки — конец окна, а не конец оплаченного периода (см. «Срок подписки в окне продления»); право определяет `IsValid` |
+| `DaysRemaining` | `int?` | Дней до `ExpiresAt` (окончания срока лицензии) — считается на момент проверки, в том числе без сети (с 2.2.5) |
+| `IsInGracePeriod` | `bool` | В SDK 2.2.x не выставляется (всегда `false`); ответ из кэша определяйте по `IsOfflineMode` |
 | `IsOfflineMode` | `bool` | Работа из кэша |
 | `Features` | `IReadOnlyList<string>` | Список доступных features |
 | `FeatureLimits` | `IReadOnlyDictionary<string, int>?` | Лимиты фичей |
@@ -534,13 +548,45 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `SessionExpiresAt` | `DateTime?` | Срок действия сессии |
 | `LastResult` | `LicenseResult?` | Последний результат проверки |
 
+> **`DaysRemaining` — дни до окончания срока лицензии, а не признак права.** При `IsValid = false` число может быть
+> положительным (например, место не назначено или машина не привязана). Действует ли лицензия, решает только
+> `IsValid`.
+
+#### Срок подписки в окне продления
+
+Подписку продлевает автосписание, и проходит оно не в ту же секунду, когда кончается оплаченный период. Чтобы
+пользователь не терял право на время продления, у действующей подписки, не отменённой на конец периода (у подписки
+на пул — для продуктов его текущего состава), сервер примерно за последний час периода переносит срок лицензии на
+24 часа после конца периода — это окно продления. В это время `ExpiresAt` и `DaysRemaining` считают до конца окна, а не
+до конца оплаченного периода. Не переносится срок, который администратор сократил раньше конца периода или продлил
+дальше конца окна; срок, поставленный администратором внутри окна, сервер переставляет как обычный.
+
+Когда продление решено:
+
+- оплата продления прошла — вперёд, до конца нового периода;
+- оплата не прошла и началась льгота по оплате — вперёд, до конца льготы;
+- подписку отменили на конец периода — назад, к концу оплаченного периода;
+- продлить нельзя (продукт снят с продажи, продлевать нечего) — подписка закрывается, и право кончается сразу, не
+  дожидаясь конца окна.
+
+Если к концу окна продление всё ещё не решено (например, платёж ждёт подтверждения 3-D Secure), право по этой подписке
+заканчивается вместе с окном и может вернуться позже — когда платёж пройдёт или, если его отклонят, на время льготы
+по оплате. Конец окна не окончателен: перепроверяйте `IsValid`.
+
+Если у учётной записи на продукт несколько действующих лицензий со сроком (кроме базовой бесплатной — в том числе
+пробная и выданная администратором), `ExpiresAt` и `DaysRemaining` показывают самый ранний из их сроков — даже если
+право даёт другая из них.
+
+Поэтому право решайте по `IsValid`: не сравнивайте `ExpiresAt` с текущим временем сами и не показывайте его как
+«оплачено до».
+
 ### GrossGeoLicense — методы
 
 | Метод | Описание |
 |-------|----------|
 | `Initialize(LicenseOptions)` | Async-инициализация |
 | `Initialize(string productKey)` | Упрощённая инициализация |
-| `InitializeSync(LicenseOptions)` | Синхронная инициализация |
+| `InitializeSync(LicenseOptions)` | Синхронная инициализация: ждёт первый вердикт не дольше 5 с, иначе `NOT_CHECKED` и позже `LicenseRefreshed` |
 | `WaitUntilReady(TimeSpan timeout)` | Синхронно дождаться результата первой проверки (не дольше `timeout`) |
 | `WhenReadyAsync(TimeSpan timeout, CancellationToken)` | Асинхронно дождаться результата первой проверки |
 | `ForProduct(string productKey)` | Получить `ProductLicenseAccessor` для продукта |
@@ -557,7 +603,7 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `CheckAndUpdateCacheVersion(long serverCacheVersion)` | Сверить версию кэша с сервером; `true`, если кэш очищен из-за расхождения версий |
 | `LicenseRefreshed` (event) | Событие обновления данных лицензии |
 | `IncrementUsageAsync(string, string, int, CancellationToken)` | v3: Инкремент usage (featureCode, limitCode, count) для текущего продукта |
-| `GetCurrentUsageAsync(string, string, CancellationToken)` | v3: Текущий usage (featureCode, limitCode) для текущего продукта |
+| `GetCurrentUsageAsync(string, string, CancellationToken)` | v3: Текущий usage (featureCode, limitCode) для текущего продукта; при любом отказе возвращает 0 — неотличимо от «израсходовано 0» |
 | `RequestTrialAsync(CancellationToken)` | Открыть панель на карточке продукта и запросить старт trial (с подтверждением; лицензию не активирует сама) |
 | `OpenProductPageAsync(string?, CancellationToken)` | Открыть панель на карточке продукта, опционально на секции (`purchase`, `reviews`) |
 | `Check()` | Быстрая проверка (из памяти), для текущего продукта |
@@ -570,7 +616,7 @@ private static ProductLicenseAccessor License => GrossGeoLicense.ForProduct(Prod
 | `WaitUntilReady(TimeSpan timeout)` | Синхронно дождаться результата первой проверки этого продукта |
 | `WhenReadyAsync(TimeSpan timeout, CancellationToken)` | Асинхронно дождаться результата первой проверки этого продукта |
 | `Check()` | Быстрая проверка (из памяти) |
-| `CheckAsync(CancellationToken)` | Полная проверка (запрос к User Panel) |
+| `CheckAsync(CancellationToken)` | Полная проверка (запрос к User Panel); не чаще 10 раз в минуту на процесс, сверх этого отдаётся прошлый результат без запроса |
 | `RefreshAsync(CancellationToken)` | Принудительное обновление |
 | `Protect(Action, Action?)` | Защита блока с fallback |
 | `ProtectOrThrow(Action)` | Защита с исключением |
@@ -621,11 +667,11 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | `BillingModel` | `BillingModel` | Модель оплаты |
 | `LicenseMode` | `LicenseMode` | Режим лицензирования |
 | `LicenseId` | `Guid?` | ID лицензии |
-| `ExpiresAt` | `DateTime?` | Дата истечения |
+| `ExpiresAt` | `DateTime?` | Дата истечения; в окне продления подписки — конец окна, а не конец оплаченного периода (см. «Срок подписки в окне продления»); право определяет `IsValid` |
 | `Features` | `IReadOnlyList<string>` | Доступные features |
 | `FeatureLimits` | `IReadOnlyDictionary<string, int>?` | Лимиты фичей |
 | `Message` | `string` | Сообщение для пользователя |
-| `IsInGracePeriod` | `bool` | В grace period |
+| `IsInGracePeriod` | `bool` | В SDK 2.2.x не выставляется (всегда `false`); ответ из кэша определяйте по `IsOfflineMode` |
 | `IsOfflineMode` | `bool` | Офлайн-режим |
 
 ---
