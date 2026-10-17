@@ -82,8 +82,12 @@ using GrossGeo.Contracts.Licensing;
 if (GrossGeoLicense.LicenseType != LicenseType.None &&
     GrossGeoLicense.LicenseType != LicenseType.Trial)
 
-// СТАЛО (без IsValid тариф по порядку не сравнивать: при отсутствии вердикта PlanTier = Unknown = 255, а 255 >= Pro истинно)
-if (GrossGeoLicense.IsValid && GrossGeoLicense.PlanTier != PlanTier.Unknown && GrossGeoLicense.PlanTier >= PlanTier.Pro)
+// СТАЛО (тариф сравнивают ТОЧНЫМ равенством и только при известном вердикте: без IsValid
+// PlanTier = Unknown = 255 — «ответа нет», а не тариф, и сравнение по порядку (>=, >) с ним ложно истинно)
+if (GrossGeoLicense.IsValid && GrossGeoLicense.PlanTier != PlanTier.Unknown
+    && (GrossGeoLicense.PlanTier == PlanTier.Pro
+        || GrossGeoLicense.PlanTier == PlanTier.ProPlus
+        || GrossGeoLicense.PlanTier == PlanTier.Enterprise))
 ```
 
 ```csharp

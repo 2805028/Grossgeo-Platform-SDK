@@ -205,9 +205,13 @@ if (License.IsValid)
 ### Проверка уровня плана
 
 ```csharp
-// Без IsValid не сравнивайте тариф по порядку: при отсутствии вердикта PlanTier = Unknown (255),
-// а 255 >= Pro истинно
-if (License.IsValid && License.PlanTier != PlanTier.Unknown && License.PlanTier >= PlanTier.Pro)
+// Тариф сравнивают ТОЧНЫМ равенством и только при известном вердикте: при отсутствии вердикта
+// PlanTier = Unknown (255) — это «ответа нет», а не тариф, и сравнение по порядку (>=, >) с ним
+// ложно истинно.
+if (License.IsValid && License.PlanTier != PlanTier.Unknown
+    && (License.PlanTier == PlanTier.Pro
+        || License.PlanTier == PlanTier.ProPlus
+        || License.PlanTier == PlanTier.Enterprise))
 {
     EnableAdvancedTools();
 }
