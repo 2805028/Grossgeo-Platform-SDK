@@ -32,14 +32,14 @@
 | **AutoCAD 2025–2026** | .NET 8.0 |
 
 > SDK общается с User Panel через Named Pipe IPC.
-> User Panel должен быть запущен — без него SDK работает в офлайн-режиме из кэша (до 7 дней).
+> User Panel должен быть запущен — без него SDK работает в офлайн-режиме из кэша. Срок подписывает платформа: у Concurrent офлайна нет, у подписки на пользователя — до 7 суток, у остальных — до 30, и не дальше срока самой лицензии.
 
 ---
 
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.3.0" />
 ```
 
 > Версия закрепляется точно, а не диапазоном. `2.*` разрешается в любую версию ветки 2 —
@@ -867,7 +867,7 @@ FeatureGuard.OrThrow("export", () => DoExport());
 | `netloadDllPath` | `string?` | Путь к DLL внутри bundle (для `Bundle`) |
 | `minAutoCADVersion` | `string` | Мин. серия AutoCAD. **Обязана быть достижима вашей нагрузкой:** сборка под `net8` не грузится в AutoCAD 2024 и старше — там .NET Framework. Для `net8`-продукта нижняя граница `R25.0` (2025); `R24.3` (2024) и ниже честны только при наличии сборки под `net48` |
 | `maxAutoCADVersion` | `string?` | Макс. серия AutoCAD — **потолок вашего продукта**; для `net8` — `R25.1` (2026), для `net10` — `R26.0` (2027); серии вне полосы рантайма (`net8` с `R26.x`) сервер отвергает, см. врезку ниже |
-| `targetPlatforms` | `string[]` | Платформы: `AutoCAD`, `Civil3D`, `Map` |
+| `targetPlatforms` | `string[]` | Платформы Autodesk: `AutoCAD`, `Civil3D`, `Map3D`, `Architecture`, `Mechanical`, `Electrical`, `MEP`, `Plant3D`; `AutoCAD*` — AutoCAD и любой продукт на его основе (хранится как есть, в `PackageContents.xml` панель пишет развёрнутый список). Регистр не важен; `Civil` → `Civil3D` |
 | `supportedOS` | `string[]` | ОС: `Win64` |
 
 > **Про `maxAutoCADVersion`: это ПОТОЛОК вашего продукта, и объявляете его вы.** Значение

@@ -5,6 +5,61 @@ All notable changes to GrossGeo.SDK.Stub will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-11-01
+
+### Security
+- **The SDK now carries the central signing keys itself: the PUBLIC PEMs of the anchor (primary + backup key) are compiled into the SDK and seeded at start-up through the same thumbprint pinning as a key received from the panel.** Decision of the owner 23.10.2026 ("backup key without reinstalling"): switching to the backup key after the release needs neither a product reinstall nor a server change — the backup key material is already on the machine. A pin without a compiled PEM (the beta pin v1) keeps working as before: its key arrives from the panel or the key cache. The key version cell is chosen from the ANCHOR (`VersionOf(thumbprint computed from the PEM)`), not from the untrusted `keyVersion` label on the wire. Envelope verification now falls back over ALL held pinned keys (newest first, padding chosen per key thumbprint — F10 rule unchanged) and keeps every LGC-791 outcome AT THE PROBE, including `MalformedSignature` and `CryptographicError`, which the old all-keys probe swallowed into a single `false`; a foreign envelope stays `SignatureMismatch`, not "rotation". The key cache (one file per user, shared by SDK generations) is now MERGED: records whose versions the current generation does not occupy are kept, so two SDK generations with different pin lists stop erasing each other's keys; loading still accepts only pinned thumbprints. The pinned list itself is unchanged (two thumbprints; a third key outside the list is still rejected). No IPC or server changes: the panel still relays one key per response, and the public API of the SDK does not change. One consequence of the seeding is named honestly (arbiter item 4): with the backup key
+  always present, the `NoKeysAvailable` outcome is no longer reachable in beta — a cold key
+  cache plus an envelope signed by the former v1 key now answers `KeyVersionUnknown`. The
+  offline-cache MESSAGE maps both outcomes to the same "open the panel" advice
+  (`Sig.NoKeys`; the shipped 2.1.7 behaviour is restored; guard
+  `SeedingKeepsTheOpenPanelAdviceTests`). The SIGNED-DENIAL classification
+  (`ReadSignedRevocation`) is deliberately NOT remapped: `KeyVersionUnknown` stays
+  "not ours" there — the key version sits outside the signature, and a forged envelope with a
+  foreign label would otherwise erase the cache without verification (refuter decision of
+  25.09 stands). Practical shift: a signed refusal that the SDK can judge only with a seeded
+  key of another version no longer follows the 2.2.4 "as if there were no envelope" rule —
+  the offline cache is NOT erased (the safe side).
+- **The SDK now verifies the other end of the license pipe: the server process must run under the same Windows user (`GetNamedPipeServerProcessId` + process token check, `Internal/PeerIdentity.cs`).** This closes IMPERSONATION: a response from a foreign process is never accepted; a foreign or unidentifiable "panel" on the pipe is treated as unavailable — the product gets the usual `IPC_CONNECTION_FAILED` refusal (no new error codes) and follows its normal offline-cache grace. The check also guards `IsUserPanelAvailable`. The Windows session of the peer is deliberately NOT checked: the pipe name is per user (one user in two RDS sessions shares one pipe) and the trust boundary is the Windows user. What this does NOT close: a denial of service where a foreign user occupies the pipe name first — `FirstPipeInstance` only detects such a takeover. No protocol changes: an old panel keeps working with the new SDK and vice versa. P/Invoke only (eight kernel32/advapi32 declarations); the token buffer stays pinned for the whole parse (`GCHandle.Alloc(Pinned)`, freed in `finally` — `GCHandle` lives in `System.Runtime`, so no new assembly references; `Marshal.AllocHGlobal` was rejected because on .NET 8 it would pull `System.Runtime.InteropServices`).
+- **The feature key material (`GetFeatureKeyAsync`) is now kept in the SIGNED offline cache (`LGC-1715`, audit F5 of 22.10).** The material travels bound to the machine with its own expiry under the signature, so an offline product keeps working with the material it already had, under the same tamper rules as the licence itself. The User Panel hands out material only from a signed payload, and the server (`ShouldDeliverFeatureKeys`), the SDK (live path and cache) and the panel all serve material only to a PAID verdict with a signed machine — Free verdicts get none. The cache-transplant guard is back: a cache carried from machine A to machine B answers `CACHE_BINDING_MISMATCH` (the earlier `Skip` on that check is removed). A leak-guard test over the SDK surface is deterministic and screens the JSON forms of the material (single- and double-quoted), with corruption controls.
+
+### Changed
+- **SDK versions below 2.3.0 are not supported on the release platform (decision of the owner 23.10.2026).** The platform server refuses the SUBMISSION of a release whose .NET 8+ assemblies reference an SDK older than 2.3.0 with `SDK_STUB_VERSION_TOO_OLD` — rebuild the product against this version and upload the corrected archive (products are rebuilt and re-uploaded). The rule applies to release submissions only; already-installed products are unaffected. Until the platform release that ships this gate, submissions on older SDKs still go through.
+
+## [2.2.6] - 2026-10-06
+
+**Recommended.** SDK messages follow the AutoCAD interface language, `PRODUCT_NOT_FOUND` becomes a final refusal (no endless background re-checks, no offline cache), and a machine-fingerprint failure now leaves its reason in the SDK journal. No public signature changes.
+
+### Changed
+- **`LicenseResult.Message` (and the messages of `SessionResult`, `UsageResult`, `SessionReleaseResult` and the SDK exceptions) follow the AutoCAD UI language (`LGC-1474`).**
+  Until now every text the SDK produced was Russian, whatever the participant's AutoCAD language. Now the language is
+  `CultureInfo.CurrentUICulture` of the thread that calls `Initialize` / `InitializeSync` (in AutoCAD: the main thread, i.e. the
+  interface language), captured once at that call and applied on every thread afterwards (heartbeat, thread pool, continuations).
+  Russian gets the same texts as before; any other language gets English. A text that arrives from the server or the panel is
+  translated by its `ErrorCode` when it is Russian and the code is known; an unknown code keeps the original text.
+  There is no new option: `LicenseOptions.Language` does not exist. If `Initialize` is called from a background thread, the language
+  is the Windows one (that thread has no AutoCAD culture). **Call `Initialize` from the AutoCAD main thread.** The language is per process and the last `Initialize` wins:
+  when several products share one copy of the SDK in a process (AutoCAD 2025+), a background-thread `Initialize` of one product switches the language for all of them.
+  `Status` and `ErrorCode` do not depend on the language and are unchanged. **Do not compare `Message`** - it is text for a person,
+  not a contract; branch on `Status` / `ErrorCode`.
+- **`PRODUCT_NOT_FOUND` is now a final refusal (`LGC-1515`).**
+  Before: the SDK treated it as temporary. It re-asked in the background (after 5, 15, 30 and 60 seconds, then every 5 minutes without end)
+  and served the offline cache until the cache expired. Now: when the platform answers that it does not know the product key, there
+  is no retry and the offline cache is not served (it is not erased either), and `Check()` reports `Blocked` with `ErrorCode = "PRODUCT_NOT_FOUND"`.
+  The platform answers this only after it has read its database: the product is not published or was deleted, the key comes from another
+  environment, or (for a paid product that was blocked by moderation) the asking account holds no licence for it. A database failure is a different
+  answer, `INTERNAL_ERROR` (HTTP 500), and stays temporary, so an incident on the platform side does not take the offline cache away.
+  Two consequences to know: a product that was **deleted without being blocked** loses its offline cache at once instead of running from it until expiry; and a
+  developer who checks a product **before it is published** gets the refusal at once - repeat the check after publication. A holder of a licence for a blocked
+  product still gets `PRODUCT_BLOCKED` and keeps the behaviour described for it. **Full effect needs the platform release that carries this SDK version** (the User Panel applies the same rule to its own cached answers);
+  SDK 2.2.5 and older keep re-asking as before.
+
+### Fixed
+- **A machine-fingerprint failure now leaves its reason in the SDK journal (`LGC-1512`).** When the fingerprint could not be built (for example the WMI subsystem did
+  not answer, reason `WmiFailure`), the copy of the fingerprint generator used by the static API wrote nothing anywhere, so a machine licence
+  could end in `MACHINE_NOT_BOUND` with no trace of why. It now writes Warning and Error lines to `sdk_diag_*.log` (an identical line repeated within a minute
+  is folded into a count). Behaviour and error codes are unchanged; only the journal lines are new.
+
 ## [2.2.5] - 2026-09-29
 
 **Required.** Fixes the verification-key cache that the SDK wrote on AutoCAD 2019–2024 and then

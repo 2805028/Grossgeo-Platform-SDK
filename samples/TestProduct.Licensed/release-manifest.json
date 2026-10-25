@@ -6,9 +6,9 @@
   "distributionType": "Bundle",
   "changelog": "Первый релиз. Pro и ProPlus Perpetual планы.",
   "postInstallAction": "RequireRestart",
-  "netloadDllPath": "Contents/TestProduct.Licensed.dll",
-  "minAutoCADVersion": "R24.3",
-  "maxAutoCADVersion": "R25.1",
+  "netloadDllPath": "Contents/net8.0-windows/TestProduct.Licensed.dll",
+  "minAutoCADVersion": "R24.0",
+  "maxAutoCADVersion": "R26.0",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],
   "loadOnStartup": true

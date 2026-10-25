@@ -538,6 +538,22 @@ namespace TestProduct.Freemium
                         WriteMessage($"   Лимит:          безлимитно");
                     }
                 }
+                else if (result.LimitExceeded)
+                {
+                    // Сервер отказал по существу: лимит исчерпан, числа квоты при этом честные.
+                    // Это отказ в операции, а не «сбой учёта».
+                    WriteMessage($"\n❌ Дневной лимит исчерпан ({result.CurrentUsage}/{result.Limit}).");
+                    WriteMessage("   Лимит сбросится в 00:00 UTC.");
+                    WriteMessage("   Обновитесь до PRO для безлимитного доступа: GGFMUPGRADE");
+                }
+                else if (result.ErrorCode == IpcErrorCodes.FeatureNotAvailable)
+                {
+                    // LGC-1198: FEATURE_NOT_AVAILABLE — отказ В ПРАВЕ, а не сбой учёта. Печатать
+                    // его как «операция выполнена, но usage не обновлён» — учить читателя
+                    // образца подменять отказ доступа сбоем инфраструктуры.
+                    WriteMessage("\n🔒 Отказано в доступе: пакетная обработка недоступна на вашем плане (FEATURE_NOT_AVAILABLE).");
+                    WriteMessage("   Обновитесь до PRO: GGFMUPGRADE");
+                }
                 else
                 {
                     WriteMessage($"⚠️ Ошибка учёта: {result.ErrorCode} — {result.ErrorMessage}");

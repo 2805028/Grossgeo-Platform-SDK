@@ -7,8 +7,8 @@
   "changelog": "Багфикс, улучшения стабильности. Доступно только с активной Maintenance подпиской.",
   "postInstallAction": "RequireRestart",
   "netloadDllPath": "Contents/TestProduct.Licensed.dll",
-  "minAutoCADVersion": "R24.3",
-  "maxAutoCADVersion": "R25.1",
+  "minAutoCADVersion": "R24.0",
+  "maxAutoCADVersion": "R26.0",
   "targetPlatforms": ["AutoCAD", "Civil3D"],
   "supportedOS": ["Win64"],
   "loadOnStartup": true

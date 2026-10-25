@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0-windows;net10.0-windows</TargetFrameworks>
     <RootNamespace>TestProduct.Licensed</RootNamespace>
     <AssemblyName>TestProduct.Licensed</AssemblyName>
     <LangVersion>latest</LangVersion>
@@ -20,9 +20,25 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- GrossGeo SDK.Stub Reference (NuGet Package) -->
-  <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
+  <!-- GrossGeo SDK.Stub Reference (NuGet Package) — net48 и net8.0-windows совпадают
+       с TargetFrameworks самого SDK.Stub.csproj напрямую. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows'">
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.3.0" />
+  </ItemGroup>
+
+  <!-- net10.0-windows: у GrossGeo.SDK.Stub такой цели НЕТ и не было (только net48;net8.0-windows —
+       см. GrossGeo.SDK.Stub.csproj). README пакета обещает, что из проекта под net10.0-windows пакет
+       «подключается штатно» — это утверждение про ОПУБЛИКОВАННЫЙ NuGet-пакет и правила совместимости
+       NuGet (SdkPackageShapeMatchesTheReadmeTests: «потребителя под net10 в дереве нет… держится на
+       правилах совместимости NuGet, а не на нашем тесте»). Для ProjectReference (образцы дерева
+       собираются против исходников, не пакета) то же самое неявное правило не гарантировано тем же
+       способом — здесь оно объявлено ЯВНО тем же приёмом, каким сама SDK.Stub документирует поведение
+       для потребителя: SetTargetFramework фиксирует net10-ногу на net8.0-windows-сборке SDK.Stub.
+       Contracts (netstandard2.0) в этом не нуждается — netstandard2.0 совместим с любой современной
+       целью без оговорок. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <ProjectReference Include="..\..\src\SDK\GrossGeo.SDK.Stub\GrossGeo.SDK.Stub.csproj"
+                      SetTargetFramework="TargetFramework=net8.0-windows" />
   </ItemGroup>
 
   <!-- AutoCAD References for .NET Framework 4.8 (AutoCAD 2019-2024) via NuGet -->
@@ -50,6 +66,17 @@
       <HintPath>$(AcadRefDir)\AdWindows.dll</HintPath>
       <Private>False</Private>
     </Reference>
+  </ItemGroup>
+
+  <!-- AutoCAD References for .NET 10 (AutoCAD 2027, R26.0) via NuGet — тем же приёмом, что net48-нога
+       (AutoCAD.NET 24.3.0) и net10-нога самого плагина (AutoCAD.NET 26.0.0): HintPath на локальный
+       каталог AutoCAD 2027 потребовал бы установленного 2027 у КАЖДОГО строящего (гейт строит всё
+       решение — line «dotnet build GrossGeo.sln» в gate.ps1), а его нет ни на машине разработки,
+       ни на GGPC3. NuGet-пакет собирается везде. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <PackageReference Include="AutoCAD.NET" Version="26.0.0" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Core" Version="26.0.0" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Model" Version="26.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Build Configuration -->

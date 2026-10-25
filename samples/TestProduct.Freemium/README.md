@@ -34,11 +34,13 @@
 | Plan.Feature | LimitCode | LimitType | Value |
 |-------------|-----------|-----------|-------|
 | free.simple-export | maxPerCall | MaxPerCall | 5 |
-| free.simple-export | maxSize | MaxSize | 10 MB |
-| free.batch-processing | maxPerCall | MaxPerCall | 10 |
-| free.batch-processing | maxPerSession | MaxPerSession | 50 |
 | pro.simple-export | — | — | ∞ |
 | pro.batch-processing | — | — | ∞ |
+
+На Free-плане `batch-processing` недоступен вовсе (см. таблицу Features выше): `GGFMUSAGE`
+и `GGFMBATCH` печатают отказ доступа, а не сбой учёта. Лимиты `maxPerDay`/`maxPerSession`
+для пакетной обработки этим манифестом не заведены — команды читают их как «безлимитно»,
+пока студия не задаст значения в Developer Portal.
 
 ## 🔧 Команды AutoCAD
 
@@ -53,6 +55,8 @@
 | `GGFMCLOUD` | Облачная синхронизация (PRO) | Да |
 | `GGFMLIMITS` | Демо Feature Limits API | Нет |
 | `GGFMREFRESH` | Обновление данных лицензии | Нет |
+| `GGFMUSAGE` | Демо Usage Tracking: инкремент `maxPerDay` пакетной обработки (PRO) | Да |
+| `GGFMUSAGEREPORT` | Отчёт по использованию (только чтение) | Нет |
 
 ## 🎯 Что покрывает
 

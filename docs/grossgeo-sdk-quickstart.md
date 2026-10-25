@@ -2,7 +2,7 @@
 
 **Версия SDK:** 2.0 | **Платформа:** AutoCAD 2019+ | **.NET:** Framework 4.8 / .NET 8
 
-> ⚠️ **Уведомление (2026-05-08, DOC-033):** §6 «Манифест продукта (product-manifest.json)» описывает legacy-формат до BC-PR2/BC-PR3 (2026-05-06). Текущая модель — `plans-manifest.json` (импорт планов/фич через Dev Panel) + `release-manifest.json` (метаданные релиза внутри bundle). Примеры обоих — в `plans-manifest.json`/`release-manifest.json` внутри любого из [samples](../samples/).
+> ⚠️ **Уведомление (2026-05-08, DOC-033):** §6 «Манифест продукта (product-manifest.json)» описывает legacy-формат до BC-PR2/BC-PR3 (2026-05-06). Текущая модель — `plans-manifest.json` (импорт планов/функций через Dev Panel) + `release-manifest.json` (метаданные релиза внутри bundle). Примеры обоих — в `plans-manifest.json`/`release-manifest.json` внутри любого из [samples](../samples/).
 
 ---
 
@@ -11,7 +11,7 @@
 ### NuGet
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.3.0" />
 ```
 
 Зависимость `GrossGeo.Contracts` подтянется автоматически.
@@ -179,15 +179,15 @@ FeatureGuard.Require("batch", () => DoBatch());
 FeatureGuard.OrThrow("batch", () => DoBatch());
 ```
 
-### Фичи, доступные без лицензии (`IsDefault`)
+### Функции, доступные без лицензии (`IsDefault`)
 
 `LoadPublicFeaturesAsync`/`IsPublicFeature` в SDK нет — удалены, отдельного обхода лицензии для
-таких фич не существует (решение владельца: отклонённый вердикт лицензии не выдаёт ничего, даже
-`IsDefault`-фичи). Фича с `"isDefault": true` в манифесте плана видна через тот же `HasFeature`,
+таких функций не существует (решение владельца: отклонённый вердикт лицензии не выдаёт ничего, даже
+`IsDefault`-функции). Функция с `"isDefault": true` в манифесте плана видна через тот же `HasFeature`,
 что и любая другая, — но только пока лицензия валидна:
 
 ```csharp
-GrossGeoLicense.HasFeature("basic-viewer"); // true, если лицензия валидна и фича в плане
+GrossGeoLicense.HasFeature("basic-viewer"); // true, если лицензия валидна и функция в плане
 ```
 
 ### Concurrent Sessions (плавающие лицензии)
@@ -238,7 +238,7 @@ public void Initialize()
 public void FreeCommand() { DoWork(); }
 ```
 
-### Freemium (бесплатный базовый + платные фичи)
+### Freemium (бесплатный базовый + платные функции)
 
 ```csharp
 [CommandMethod("BASIC_CMD")]
@@ -404,7 +404,7 @@ MyPlugin/
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.2.5" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.3.0" />
   </ItemGroup>
 
   <!-- AutoCAD References -->
@@ -544,7 +544,7 @@ MyPlugin/
 ## 7. Публикация
 
 1. **Студия** → Developer Portal → создать студию, пройти KYC
-2. **Продукт** → создать продукт, настроить планы/фичи/лимиты, получить `ProductKey`
+2. **Продукт** → создать продукт, настроить планы/функции/лимиты, получить `ProductKey`
 3. **Релиз** → загрузить `.bundle.zip`, заполнить changelog, указать совместимость
 4. **Модерация** → Submit → PendingReview → Approved/Rejected
 5. **Публикация** → Approved → автоматическая публикация в каталог
@@ -570,7 +570,7 @@ MyPlugin/
 | Класс | Когда | Свойства |
 |-------|-------|----------|
 | `LicenseException` | `ProtectOrThrow` — лицензия невалидна | `Status` |
-| `FeatureNotAvailableException` | `RequireFeatureOrThrow` — фичи нет | `FeatureCode` |
+| `FeatureNotAvailableException` | `RequireFeatureOrThrow` — функции нет | `FeatureCode` |
 | `LimitExceededException` | `RequireLimitOrThrow` — лимит превышен | `FeatureCode`, `LimitCode`, `Limit`, `ActualValue` |
 
 ---
