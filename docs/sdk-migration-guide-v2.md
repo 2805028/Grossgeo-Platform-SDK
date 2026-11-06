@@ -23,7 +23,7 @@ SDK v2 вводит новую модель лицензирования: **Plan
 
 ### Обратная совместимость
 
-- `LicenseType` сохранён с атрибутом `[Obsolete]` — код компилируется с предупреждением.
+- `LicenseType` в SDK 2.x нет вовсе (удалён ещё до первой версии 2.0.0) — старый код с ним **не скомпилируется**; заменяйте по таблице и примерам раздела 2.
 - Все методы v1 (`Protect`, `HasFeature`, `RequireFeature`, `CheckForUpdatesAsync`) работают без изменений.
 - `Initialize()` и `Shutdown()` не изменились.
 
@@ -109,7 +109,7 @@ if (GrossGeoLicense.LicenseType == LicenseType.Trial)
 // СТАЛО
 if (GrossGeoLicense.PlanTier == PlanTier.Free && GrossGeoLicense.IsValid)
 // Или проверить через LicenseResult:
-if (GrossGeoLicense.LastResult?.Status == LicenseCheckStatus.InTrial)
+if (GrossGeoLicense.LastResult?.Status == LicenseCheckStatus.Trial)
 ```
 
 ```csharp
@@ -295,10 +295,10 @@ SDK v2 использует IPC Protocol v4. При подключении к Us
 
 ## 5. Чеклист миграции
 
-- [ ] Обновить `PackageReference` до точной версии `2.1.16` (не диапазоном `2.*`)
+- [ ] Обновить `PackageReference` до точной версии `2.3.0` (не диапазоном `2.*`)
 - [ ] Добавить `using GrossGeo.Contracts.Licensing;`
 - [ ] Заменить `LicenseType` на `PlanTier` / `BillingModel` (см. раздел 2)
-- [ ] Убрать предупреждения `CS0618` (obsolete)
+- [ ] Не использовать `BillingModel.Contract` (помечен `[Obsolete]`, `Enterprise` зарезервирован)
 - [ ] (Опционально) Добавить Feature Limits для количественных ограничений
 - [x] ~~(Опционально) Добавить Public Features для гостевого доступа~~ ❌ удалено в v3
 - [ ] (Опционально) Добавить Concurrent Sessions для плавающих лицензий
@@ -311,7 +311,7 @@ SDK v2 использует IPC Protocol v4. При подключении к Us
 
 ### Обязательно ли мигрировать на v2?
 
-Нет. Старый `LicenseType` продолжает работать с предупреждением `[Obsolete]`. Рекомендуется мигрировать до версии 3.0, в которой `LicenseType` будет удалён.
+Да. `LicenseType` в SDK 2.x нет — код с ним не компилируется. Замена — по разделу 2; после миграции закрепляйте точную версию пакета (раздел 1).
 
 ### Нужно ли пересобирать плагин?
 

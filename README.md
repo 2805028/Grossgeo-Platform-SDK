@@ -1,7 +1,7 @@
 # GrossGeo SDK Stub
 
 [![NuGet](https://img.shields.io/nuget/v/GrossGeo.SDK.Stub.svg)](https://www.nuget.org/packages/GrossGeo.SDK.Stub)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE.md)
 
 Легковесный SDK (~25 KB) для лицензирования AutoCAD-плагинов через платформу GrossGeo.
 Поддерживает планы, features, лимиты, concurrent-сессии и офлайн-режим.
@@ -63,6 +63,19 @@
 
 Сам пакет SDK собран под `net48` и `net8.0-windows`; из проекта под `net10.0-windows` он
 подключается штатно — отдельной сборки под .NET 10 не требуется.
+
+---
+
+## Документация
+
+| Руководство | О чём |
+|-------------|-------|
+| [Быстрый старт](docs/grossgeo-sdk-quickstart.md) | Initialize, Protect, базовая проверка лицензии |
+| [Руководство разработчика SDK](docs/grossgeo-sdk-developer-guide.md) | Полный справочник: сессии, офлайн-режим, feature key, манифесты |
+| [Deep-links (`grossgeo://`)](docs/grossgeo-sdk-deeplinks-guide.md) | Кнопки «Купить», «Отзыв», «Trial» через URI-схему |
+| [Публикация продукта (Publishing API)](docs/grossgeo-publishing-api-guide.md) | Выкладка релизов и манифестов через REST API |
+| [Миграция SDK v1 → v2](docs/sdk-migration-guide-v2.md) | Замена `LicenseType` на `PlanTier`/`BillingModel` |
+| [Облачные настройки продукта](docs/cloud-settings-preview.md) | Хранение и синхронизация настроек между машинами участника — **предварительно, 2.4.0** |
 
 ---
 

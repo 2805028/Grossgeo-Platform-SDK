@@ -5,6 +5,10 @@ All notable changes to GrossGeo.SDK.Stub will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — 2.4.0 (готовится)
+
+- Облачные настройки (`GrossGeo.SDK.Settings`) — предварительное руководство: [docs/cloud-settings-preview.md](docs/cloud-settings-preview.md). В 2.3.0 этого API нет; выпуск пакета 2.4.0 — после выхода панелей с ним.
+
 ## [2.3.0] - 2026-11-01
 
 ### Security
