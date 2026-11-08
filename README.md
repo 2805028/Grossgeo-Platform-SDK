@@ -1,7 +1,7 @@
 # GrossGeo SDK Stub
 
 [![NuGet](https://img.shields.io/nuget/v/GrossGeo.SDK.Stub.svg)](https://www.nuget.org/packages/GrossGeo.SDK.Stub)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 
 Легковесный SDK (~25 KB) для лицензирования AutoCAD-плагинов через платформу GrossGeo.
 Поддерживает планы, features, лимиты, concurrent-сессии и офлайн-режим.
@@ -39,7 +39,7 @@
 ## Установка
 
 ```xml
-<PackageReference Include="GrossGeo.SDK.Stub" Version="2.3.0" />
+<PackageReference Include="GrossGeo.SDK.Stub" Version="2.4.0" />
 ```
 
 > Версия закрепляется точно, а не диапазоном. `2.*` разрешается в любую версию ветки 2 —
@@ -63,19 +63,6 @@
 
 Сам пакет SDK собран под `net48` и `net8.0-windows`; из проекта под `net10.0-windows` он
 подключается штатно — отдельной сборки под .NET 10 не требуется.
-
----
-
-## Документация
-
-| Руководство | О чём |
-|-------------|-------|
-| [Быстрый старт](docs/grossgeo-sdk-quickstart.md) | Initialize, Protect, базовая проверка лицензии |
-| [Руководство разработчика SDK](docs/grossgeo-sdk-developer-guide.md) | Полный справочник: сессии, офлайн-режим, feature key, манифесты |
-| [Deep-links (`grossgeo://`)](docs/grossgeo-sdk-deeplinks-guide.md) | Кнопки «Купить», «Отзыв», «Trial» через URI-схему |
-| [Публикация продукта (Publishing API)](docs/grossgeo-publishing-api-guide.md) | Выкладка релизов и манифестов через REST API |
-| [Миграция SDK v1 → v2](docs/sdk-migration-guide-v2.md) | Замена `LicenseType` на `PlanTier`/`BillingModel` |
-| [Облачные настройки продукта](docs/cloud-settings-preview.md) | Хранение и синхронизация настроек между машинами участника — **предварительно, 2.4.0** |
 
 ---
 
@@ -293,7 +280,8 @@ GrossGeoLicense.RequireLimitOrThrow("batch-export", "maxPerCall", objects.Count)
 > Начиная с SDK **2.2.0** (SDK, серверная и панельная части выпущены — панели с `1.0.2637.18001`,
 > 18.09.2026). Для фичей, чья ценность в самих данных продукта (таблицы, шаблоны, коэффициенты),
 > платформа может отдавать не просто «да/нет», а секрет, которым вы шифруете эти данные при сборке
-> и расшифровываете на машине пользователя. Секрет заводится в Developer Portal и привязан к паре
+> и расшифровываете на машине пользователя. Секрет заводится через Developer API (не в Developer Portal:
+> экрана для этого нет; маршруты и скоупы — в руководстве разработчика SDK) и привязан к паре
 > `(featureCode, kid)` — `kid` придумываете сами, для ротации без поломки уже выпущенных релизов.
 
 ```csharp
@@ -367,6 +355,53 @@ if (!result.IsSuccess)
 | `Remaining` | `int?` | Оставшийся quota |
 | `ErrorCode` | `string?` | Код ошибки |
 | `ErrorMessage` | `string?` | Сообщение об ошибке |
+
+---
+
+## Счётчики команд и соглашения (2.4.0)
+
+Два локальных API: не бросают исключений, не ходят в сеть и в канал лицензии, `Initialize` и
+лицензия не нужны; net48 и net8 — один публичный API. Отправляет данные на платформу User Panel.
+Это не лимиты `MaxPerDay`/`MaxPerMonth` из раздела выше — те считает сервер лицензий.
+
+### Счётчики команд (`GrossGeo.SDK.Telemetry`)
+
+Анонимные суточные итоги выполнения команд продукта: в отчёте нет участника, машины и IP.
+Без согласия участника на диск ничего не пишется — ответ `NotConsented`.
+
+```csharp
+using GrossGeo.SDK.Telemetry;
+
+var usage = GrossGeoUsage.For("<ключ продукта>"); // один репортёр на ключ
+
+// по таймеру раз в 10–15 минут: итог за сутки в этом процессе (заменяет прежний)
+var result = usage.SubmitTotals(DateTime.Today, "1.2.0", new Dictionary<string, long> { ["GGT_OPEN"] = 3 });
+// result.Outcome: Stored | NotConsented | Invalid | Failed; result.SkippedCommands
+```
+
+`AddCounts` — то же, но прибавляет к прежнему итогу (если ваш счётчик обнуляется при снятии).
+Документация: руководство `grossgeo-sdk-2.4-guide.md` в публичном репозитории [Grossgeo-Platform-SDK](https://github.com/2805028/Grossgeo-Platform-SDK), раздел «Счётчики команд».
+
+### Соглашения и согласие (`GrossGeo.SDK.Legal`)
+
+```csharp
+using GrossGeo.SDK.Legal;
+
+var legal = GrossGeoAgreements.For("<ключ продукта>");
+
+var state = legal.GetState("product-usage-terms", textSha256); // 64 hex в нижнем регистре
+if (state.Acceptance != AgreementAcceptance.Accepted)
+{
+    // показать окно соглашения; по согласию участника:
+    legal.Accept("product-usage-terms", textSha256, "Условия использования", telemetryConsent: true);
+}
+
+legal.SetTelemetryConsent(false);                    // отзыв действует сразу и без сети
+legal.Changed += (s, e) => { /* e.Kind: TelemetryConsentChanged | AcceptanceChanged */ };
+```
+
+Решения копятся в местной очереди и отправляются панелью — окно соглашения работает без сети.
+Документация: руководство `grossgeo-sdk-2.4-guide.md` в публичном репозитории [Grossgeo-Platform-SDK](https://github.com/2805028/Grossgeo-Platform-SDK), раздел «Соглашения и согласие».
 
 ---
 

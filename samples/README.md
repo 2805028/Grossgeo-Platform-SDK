@@ -5,7 +5,7 @@
 
 > Примеры подключают SDK из NuGet; **актуальная версия закреплена в [README пакета](../README.md)**.
 > Все они используют паттерн `ProductLicenseAccessor` для корректной работы нескольких плагинов
-> в одном процессе AutoCAD. См. [ProductLicenseAccessor](../README.md#productlicenseaccessor--свойства).
+> в одном процессе AutoCAD. См. [Multi-plugin](../README.md#multi-plugin-несколько-плагинов-в-одном-процессе).
 
 ## Продукты
 
@@ -21,7 +21,7 @@
 | [TestProduct.PluginDll](./TestProduct.PluginDll/) | Одиночная DLL без bundle | PluginDll |
 
 Каждый продукт описан двумя манифестами рядом с проектом — `plans-manifest.json` (планы и фичи)
-и `release-manifest.json` (метаданные релиза). Подробности формата — в [корневом README](../README.md#манифест-продукта-product-manifestjson).
+и `release-manifest.json` (метаданные релиза). Подробности формата — в [корневом README](../README.md#манифесты-продукта).
 
 ## Быстрый старт
 
@@ -96,7 +96,7 @@ GrossGeoLicense.Shutdown(ProductKey);
 
 **Почему?** Статические свойства `GrossGeoLicense.IsValid`, `GrossGeoLicense.PlanTier` и т.д. возвращают данные
 **последнего** инициализированного продукта. При нескольких плагинах в одном AutoCAD это даёт конфликты —
-`ProductLicenseAccessor` решает проблему. Подробности — в [корневом README](../README.md#productlicenseaccessor--свойства).
+`ProductLicenseAccessor` решает проблему. Подробности — в [корневом README](../README.md#multi-plugin-несколько-плагинов-в-одном-процессе).
 
 ## Офлайн-режим
 

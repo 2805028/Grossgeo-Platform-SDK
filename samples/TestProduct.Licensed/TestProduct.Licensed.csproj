@@ -23,7 +23,7 @@
   <!-- GrossGeo SDK.Stub Reference (NuGet Package) — net48 и net8.0-windows совпадают
        с TargetFrameworks самого SDK.Stub.csproj напрямую. -->
   <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows'">
-    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.3.0" />
+    <PackageReference Include="GrossGeo.SDK.Stub" Version="2.4.0" />
   </ItemGroup>
 
   <!-- net10.0-windows: у GrossGeo.SDK.Stub такой цели НЕТ и не было (только net48;net8.0-windows —
