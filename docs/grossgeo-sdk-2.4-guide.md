@@ -3,7 +3,7 @@
 **Дата:** Ноябрь 2026
 **Для кого:** Разработчики AutoCAD-плагинов на `GrossGeo.SDK.Stub` 2.4.0, которые хотят хранить настройки продукта в облаке участника, собирать анонимную статистику команд или показывать участнику соглашение.
 
-> См. также: [Руководство разработчика SDK](grossgeo-sdk-developer-guide.md), [Быстрый старт](grossgeo-sdk-quickstart.md).
+> См. также: [Руководство разработчика SDK](grossgeo-sdk-developer-guide.md), [Быстрый старт](grossgeo-sdk-quickstart.md), [Лицензионное соглашение продукта в User Panel](grossgeo-product-agreement-guide.md).
 
 ```xml
 <PackageReference Include="GrossGeo.SDK.Stub" Version="2.4.0" />
@@ -467,7 +467,7 @@ public sealed class AgreementChangedEventArgs
 ### Правила формы
 
 - `agreementCode`: `^[a-z0-9][a-z0-9._-]{0,63}$` — только нижний регистр;
-- `textSha256`: 64 hex-символа **в нижнем регистре**. SDK проверяет только форму; нормализацию текста выбирает команда продукта, и она должна быть постоянной: другой отпечаток — новая версия;
+- `textSha256`: 64 hex-символа **в нижнем регистре**. SDK проверяет только форму; способ отпечатка должен быть постоянным: другой отпечаток — новая версия. Если то же соглашение показывается и в User Panel перед установкой, считайте отпечаток способом платформы «v1» — иначе принятие в панели плагин не узнает (см. [Соглашение, принятое в User Panel](#соглашение-принятое-в-user-panel));
 - `title`: до 200 символов.
 
 Нарушение формы: `Accept` отвечает `Invalid`, `GetState` — состояние `Unknown`.
@@ -494,19 +494,12 @@ public sealed class AgreementChangedEventArgs
 ```csharp
 using GrossGeo.SDK.Legal;
 
-// Отпечаток версии текста — считайте сами и всегда одинаково (net48-совместимо):
-static string Sha256Hex(string text)
-{
-    using (var sha = System.Security.Cryptography.SHA256.Create())
-    {
-        var hash = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text));
-        return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-    }
-}
-
+// Отпечаток версии текста — всегда одним способом. AgreementFingerprintV1 — способ платформы «v1»
+// (реализация — в руководстве «Лицензионное соглашение продукта в User Panel», раздел 2):
+// с ним принятие того же текста в User Panel засчитывается и в плагине.
 var legal = GrossGeoAgreements.For("<ключ продукта>");
 var code = "myproduct-usage-terms";
-var sha = Sha256Hex(agreementText);
+var sha = AgreementFingerprintV1.Compute(agreementText);
 
 var state = legal.GetState(code, sha);
 if (state.Acceptance != AgreementAcceptance.Accepted)
@@ -531,6 +524,57 @@ legal.Changed += (s, e) =>
 ```
 
 Участник закрыл окно, не приняв, — решения нет: окно покажется при следующем старте (`GetState` всё ещё `NotAccepted`). `Failed` — локальный сбой записи: повторите при следующем старте.
+
+### Соглашение, принятое в User Panel
+
+Если к выпуску продукта приложено соглашение (см. [Лицензионное соглашение продукта в User Panel](grossgeo-product-agreement-guide.md)), участник принимает его в User Panel 1.0.2679 и новее до установки или покупки. Принятие записывается в учётную запись, и `GetState(code, sha)` отвечает `Accepted` с `Source = Account`, если:
+
+- `code` — тот же код, что указан в соглашении выпуска (`agreementCode`);
+- `sha` — отпечаток того же текста способом платформы «v1». Сверьте его с «Отпечатком платформы (v1)» в Developer Panel или полем `textSha256` ответа API.
+
+Галочка счётчиков в окне панели снята, пока участник не решал; иначе показывает его текущее решение по студии. Участник её отметил — `Telemetry = Granted`; снял или не отметил, а раньше отвечал «да» или не решал, — `Revoked`.
+
+**Принятие видно не сразу.** Кэш учётной записи читается по студии продукта, а связь «ключ продукта → студия» на машине панель устанавливает по запросу SDK (см. «Вторая машина без своих решений» в [Контракте](#контракт-1)): первое обращение оставляет запрос, панель разрешает его в ближайшем такте — обычно за несколько секунд, при сбое сети — до нескольких минут, без входа в панель — никогда. До этого `GetState` отвечает `NotAccepted`; когда принятие появится, придёт `Changed` с видом `AcceptanceChanged`.
+
+Поэтому:
+
+- заводите клиент и подписывайтесь на `Changed` при загрузке плагина, а не в момент показа окна;
+- перед показом своего окна подождите несколько секунд `AcceptanceChanged`;
+- если окно всё же показалось — повторный `Accept` безвреден.
+
+```csharp
+using System;
+using System.Threading;
+using GrossGeo.SDK.Legal;
+
+internal static class AgreementCheck
+{
+    private const string Code = "myproduct-eula";
+    private static readonly ManualResetEventSlim Accepted = new ManualResetEventSlim(false);
+    private static AgreementClient _legal;
+    private static string _sha;
+
+    // При загрузке плагина: SDK оставит панели запрос привязки, и к первой команде
+    // принятие из панели, скорее всего, уже будет видно.
+    public static void Start(string productKey, string agreementText)
+    {
+        _legal = GrossGeoAgreements.For(productKey);
+        _sha = AgreementFingerprintV1.Compute(agreementText); // способ «v1»
+        _legal.Changed += (s, e) =>
+        {
+            if (e.Kind == AgreementChangeKind.AcceptanceChanged && IsAccepted()) Accepted.Set();
+        };
+        if (IsAccepted()) Accepted.Set();
+    }
+
+    // В первой команде продукта: true — своё окно не нужно.
+    // Ожидание блокирует вызывающий поток — только пока принятия нет, один раз.
+    public static bool WaitForAcceptance(TimeSpan timeout) => Accepted.IsSet || Accepted.Wait(timeout);
+
+    private static bool IsAccepted() =>
+        _legal.GetState(Code, _sha).Acceptance == AgreementAcceptance.Accepted;
+}
+```
 
 ### Текст соглашения
 
